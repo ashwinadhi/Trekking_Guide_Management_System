@@ -1,239 +1,181 @@
-import Link from "next/link"
-import Image from "next/image"
-import { MapPin, Clock, Users, Star, Filter } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Clock, Star, Filter, Mountain, ArrowRight, Loader2, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+
+interface Trek {
+  _id: string;
+  title: string;
+  description: string;
+  price: number;
+  duration: string;
+  image: string;
+  createdAt: string;
+}
 
 export default function TreksPage() {
-  const treks = [
-    {
-      id: "everest-base-camp",
-      name: "Everest Base Camp Trek",
-      region: "Khumbu Region",
-      duration: "14 days",
-      difficulty: "Challenging",
-      difficultyColor: "bg-red-500",
-      price: 1850,
-      rating: 4.9,
-      reviews: 127,
-      image: "/images/everest-base-camp.jpg",
-      description:
-        "The ultimate Himalayan adventure to the base of the world's highest peak. Experience Sherpa culture, stunning mountain views, and the achievement of a lifetime.",
-      highlights: [
-        "Everest Base Camp (5,364m)",
-        "Kala Patthar viewpoint",
-        "Sherpa villages",
-        "Sagarmatha National Park",
-      ],
-    },
-    {
-      id: "annapurna-circuit",
-      name: "Annapurna Circuit Trek",
-      region: "Annapurna Region",
-      duration: "12 days",
-      difficulty: "Moderate",
-      difficultyColor: "bg-orange-500",
-      price: 1450,
-      rating: 4.8,
-      reviews: 89,
-      image: "/images/annapurna-circuit.jpg",
-      description:
-        "Classic circuit trek with diverse landscapes from subtropical forests to high alpine terrain. Cross the famous Thorong La Pass at 5,416m.",
-      highlights: ["Thorong La Pass (5,416m)", "Muktinath Temple", "Diverse landscapes", "Traditional villages"],
-    },
-    {
-      id: "langtang-valley",
-      name: "Langtang Valley Trek",
-      region: "Langtang Region",
-      duration: "8 days",
-      difficulty: "Easy-Moderate",
-      difficultyColor: "bg-green-500",
-      price: 950,
-      rating: 4.7,
-      reviews: 64,
-      image: "/images/langtang-valley.jpg",
-      description:
-        "Beautiful valley trek through traditional Tamang villages with stunning mountain scenery. Perfect for those with limited time.",
-      highlights: ["Kyanjin Gompa", "Tamang culture", "Langtang Lirung views", "Cheese factory visit"],
-    },
-    {
-      id: "manaslu-circuit",
-      name: "Manaslu Circuit Trek",
-      region: "Manaslu Region",
-      duration: "16 days",
-      difficulty: "Challenging",
-      difficultyColor: "bg-red-500",
-      price: 2100,
-      rating: 4.9,
-      reviews: 43,
-      image: "/images/manaslu-circuit.jpg",
-      description:
-        "Off-the-beaten-path adventure around the eighth highest mountain in the world. Remote and pristine mountain experience.",
-      highlights: ["Larkya La Pass (5,106m)", "Mount Manaslu views", "Remote villages", "Restricted area permit"],
-    },
-    {
-      id: "gokyo-lakes",
-      name: "Gokyo Lakes Trek",
-      region: "Khumbu Region",
-      duration: "12 days",
-      difficulty: "Moderate-Challenging",
-      difficultyColor: "bg-orange-500",
-      price: 1650,
-      rating: 4.8,
-      reviews: 71,
-      image: "/images/gokyo-lakes.jpg",
-      description:
-        "Alternative route to Everest region featuring pristine glacial lakes and panoramic mountain views from Gokyo Ri.",
-      highlights: ["Gokyo Lakes", "Gokyo Ri summit (5,357m)", "Ngozumpa Glacier", "Cho Oyu views"],
-    },
-    {
-      id: "upper-mustang",
-      name: "Upper Mustang Trek",
-      region: "Mustang Region",
-      duration: "10 days",
-      difficulty: "Moderate",
-      difficultyColor: "bg-orange-500",
-      price: 1750,
-      rating: 4.6,
-      reviews: 38,
-      image: "/images/upper-mustang.jpg",
-      description:
-        "Journey to the forbidden kingdom of Lo Manthang. Experience Tibetan culture and dramatic desert landscapes.",
-      highlights: ["Lo Manthang Palace", "Tibetan culture", "Desert landscapes", "Ancient monasteries"],
-    },
-  ]
+  const [treks, setTreks] = useState<Trek[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTreks() {
+      try {
+        const res = await fetch("/api/treks");
+        if (res.ok) {
+          const data = await res.json();
+          setTreks(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch treks", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTreks();
+  }, []);
 
   return (
     <div className="min-h-screen">
       <Header />
 
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-green-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Trek Packages</h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Discover Nepal's most spectacular trekking routes with expert guidance. Each package includes
-              accommodation, meals, permits, and professional guiding services.
-            </p>
+      {/* Hero Header */}
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-green-900 via-emerald-800 to-teal-900" />
+        <div className="absolute inset-0 bg-[url('/images/mountain-sunrise.jpg')] bg-cover bg-center opacity-20" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Filter by:</span>
-              </div>
-              <Select>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Difficulty Level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="moderate">Moderate</SelectItem>
-                  <SelectItem value="challenging">Challenging</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="short">1-7 days</SelectItem>
-                  <SelectItem value="medium">8-14 days</SelectItem>
-                  <SelectItem value="long">15+ days</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Region" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="everest">Everest Region</SelectItem>
-                  <SelectItem value="annapurna">Annapurna Region</SelectItem>
-                  <SelectItem value="langtang">Langtang Region</SelectItem>
-                  <SelectItem value="manaslu">Manaslu Region</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Decorative elements */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-emerald-200 text-sm font-medium mb-6 border border-white/10">
+              <Mountain className="h-4 w-4" />
+              Discover Nepal&apos;s Finest Routes
             </div>
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+              Trek{" "}
+              <span className="bg-gradient-to-r from-emerald-300 to-teal-300 bg-clip-text text-transparent">
+                Packages
+              </span>
+            </h1>
+            <p className="text-xl text-emerald-100/80 max-w-3xl mx-auto leading-relaxed">
+              Discover Nepal&apos;s most spectacular trekking routes with expert guidance. Each
+              package includes accommodation, meals, permits, and professional guiding services.
+            </p>
           </div>
         </div>
       </section>
 
       {/* Trek Cards */}
-      <section className="py-20">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {treks.map((trek) => (
-              <Card key={trek.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-64">
-                  <Image src={trek.image || "/placeholder.svg"} alt={trek.name} fill className="object-cover" />
-                  <Badge className={`absolute top-4 left-4 ${trek.difficultyColor} text-white`}>
-                    {trek.difficulty}
-                  </Badge>
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="text-sm font-medium">{trek.rating}</span>
-                    <span className="text-xs text-gray-500">({trek.reviews})</span>
-                  </div>
-                </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="h-10 w-10 animate-spin text-emerald-600 mb-4" />
+              <p className="text-gray-500 text-lg">Loading trek packages...</p>
+            </div>
+          ) : treks.length === 0 ? (
+            <div className="text-center py-20">
+              <Mountain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                No trek packages available yet
+              </h3>
+              <p className="text-gray-400">Check back soon for exciting new trekking routes!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {treks.map((trek) => (
+                <Card
+                  key={trek._id}
+                  className="group overflow-hidden border-0 shadow-md hover:shadow-2xl transition-all duration-500 rounded-2xl bg-white"
+                >
+                  {/* Image */}
+                  <div className="relative h-64 overflow-hidden">
+                    {trek.image ? (
+                      <img
+                        src={trek.image}
+                        alt={trek.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                        <Mountain className="h-16 w-16 text-emerald-300" />
+                      </div>
+                    )}
 
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{trek.name}</h3>
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{trek.region}</span>
+                    {/* Price badge */}
+                    <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1 shadow-lg">
+                      <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-sm font-bold text-gray-900">
+                        {trek.price.toLocaleString()}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{trek.duration}</span>
+
+                    {/* Duration badge */}
+                    <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/40 backdrop-blur-sm rounded-full text-white text-xs font-medium">
+                      <Clock className="h-3 w-3" />
+                      {trek.duration}
                     </div>
                   </div>
 
-                  <p className="text-gray-600 mb-4 text-sm leading-relaxed">{trek.description}</p>
+                  <CardContent className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-emerald-700 transition-colors line-clamp-1">
+                      {trek.title}
+                    </h3>
 
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm mb-2">Highlights:</h4>
-                    <ul className="text-xs text-gray-600 space-y-1">
-                      {trek.highlights.slice(0, 3).map((highlight, index) => (
-                        <li key={index} className="flex items-center gap-1">
-                          <span className="w-1 h-1 bg-green-500 rounded-full"></span>
-                          {highlight}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                    <p className="text-gray-500 text-sm leading-relaxed mb-5 line-clamp-3">
+                      {trek.description}
+                    </p>
 
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-2xl font-bold text-green-700">${trek.price}</span>
-                      <span className="text-sm text-gray-500 ml-1">per person</span>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-2xl font-bold text-emerald-700">
+                          ${trek.price.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-gray-400 ml-1">per person</span>
+                      </div>
+                      <Link href={`/treks/${trek._id}`}>
+                        <Button
+                          size="sm"
+                          className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl px-5 group/btn transition-all duration-300"
+                        >
+                          View Details
+                          <ArrowRight className="ml-1.5 h-4 w-4 group-hover/btn:translate-x-0.5 transition-transform" />
+                        </Button>
+                      </Link>
                     </div>
-                    <Link href={`/treks/${trek.id}`}>
-                      <Button variant="outline" size="sm">
-                        View Details
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
       {/* Custom Trek CTA */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Don't See Your Perfect Trek?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Don&apos;t See Your Perfect Trek?
+          </h2>
           <p className="text-xl text-gray-600 mb-8">
-            I can create a custom itinerary tailored to your interests, fitness level, and time constraints. Let's
-            design your perfect Himalayan adventure together.
+            I can create a custom itinerary tailored to your interests, fitness level, and time
+            constraints. Let&apos;s design your perfect Himalayan adventure together.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contact">
@@ -251,49 +193,55 @@ export default function TreksPage() {
       </section>
 
       {/* What's Included */}
-      <section className="py-20">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What's Included in Every Trek Package</h2>
-            <p className="text-xl text-gray-600">Comprehensive packages designed for your comfort and safety</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              What&apos;s Included in Every Trek Package
+            </h2>
+            <p className="text-xl text-gray-600">
+              Comprehensive packages designed for your comfort and safety
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-green-700" />
+            {[
+              {
+                icon: "👨‍🏫",
+                title: "Professional Guide",
+                desc: "Licensed, experienced guide throughout your trek",
+              },
+              {
+                icon: "🏔️",
+                title: "All Permits",
+                desc: "TIMS card, National Park permits, and restricted area permits",
+              },
+              {
+                icon: "🏠",
+                title: "Accommodation",
+                desc: "Tea house lodges or camping as per itinerary",
+              },
+              {
+                icon: "🍽️",
+                title: "Meals",
+                desc: "Breakfast, lunch, and dinner during the trek",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="text-center p-6 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="text-4xl mb-4">{item.icon}</div>
+                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm">{item.desc}</p>
               </div>
-              <h3 className="text-lg font-bold mb-2">Professional Guide</h3>
-              <p className="text-gray-600 text-sm">Licensed, experienced guide (me!) throughout your trek</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MapPin className="h-8 w-8 text-green-700" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">All Permits</h3>
-              <p className="text-gray-600 text-sm">TIMS card, National Park permits, and restricted area permits</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Clock className="h-8 w-8 text-green-700" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">Accommodation</h3>
-              <p className="text-gray-600 text-sm">Tea house lodges or camping as per itinerary</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="h-8 w-8 text-green-700" />
-              </div>
-              <h3 className="text-lg font-bold mb-2">Meals</h3>
-              <p className="text-gray-600 text-sm">Breakfast, lunch, and dinner during the trek</p>
-            </div>
+            ))}
           </div>
 
-          <div className="mt-12 bg-blue-50 p-8 rounded-lg">
-            <h3 className="text-xl font-bold text-center mb-4">Additional Services Available</h3>
+          <div className="mt-12 bg-emerald-50 p-8 rounded-2xl border border-emerald-100">
+            <h3 className="text-xl font-bold text-center mb-4">
+              Additional Services Available
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <ul className="space-y-2">
                 <li>✓ Airport transfers</li>
@@ -317,5 +265,5 @@ export default function TreksPage() {
 
       <Footer />
     </div>
-  )
+  );
 }

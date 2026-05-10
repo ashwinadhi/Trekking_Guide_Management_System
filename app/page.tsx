@@ -1,43 +1,44 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight, Mountain, Users, Shield, Award, Star, Calendar, Car, Backpack } from "lucide-react"
+import { ArrowRight, Mountain, Users, Shield, Award, Star, Calendar, Car, Backpack, Clock, DollarSign, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 
+interface Trek {
+  _id: string;
+  title: string;
+  description: string;
+  price: number;
+  duration: string;
+  image: string;
+}
+
 export default function HomePage() {
-  const featuredTreks = [
-    {
-      id: "everest-base-camp",
-      name: "Everest Base Camp Trek",
-      duration: "14 days",
-      difficulty: "Challenging",
-      price: "$1,299",
-      image: "/images/everest-base-camp.jpg",
-      rating: 4.9,
-    },
-    {
-      id: "annapurna-circuit",
-      name: "Annapurna Circuit Trek",
-      duration: "16 days",
-      difficulty: "Moderate",
-      price: "$899",
-      image: "/images/annapurna-circuit.jpg",
-      rating: 4.8,
-    },
-    {
-      id: "langtang-valley",
-      name: "Langtang Valley Trek",
-      duration: "7 days",
-      difficulty: "Easy",
-      price: "$599",
-      image: "/images/langtang-valley.jpg",
-      rating: 4.7,
-    },
-  ]
+  const [featuredTreks, setFeaturedTreks] = useState<Trek[]>([])
+  const [treksLoading, setTreksLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchTreks() {
+      try {
+        const res = await fetch("/api/treks")
+        if (res.ok) {
+          const data = await res.json()
+          // Show up to 3 treks as featured
+          setFeaturedTreks(data.slice(0, 3))
+        }
+      } catch (err) {
+        console.error("Failed to fetch treks", err)
+      } finally {
+        setTreksLoading(false)
+      }
+    }
+    fetchTreks()
+  }, [])
 
   const stats = [
     { icon: Mountain, label: "Treks Completed", value: "500+" },
@@ -101,7 +102,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Treks */}
+      {/* Featured Treks — Dynamic from MongoDB */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -111,36 +112,56 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredTreks.map((trek) => (
-              <Card key={trek.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-64">
-                  <Image src={trek.image || "/placeholder.svg"} alt={trek.name} fill className="object-cover" />
-                  <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-full text-sm font-semibold">
-                    {trek.price}
-                  </div>
-                </div>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex items-center">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600 ml-1">{trek.rating}</span>
+          {treksLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+          ) : featuredTreks.length === 0 ? (
+            <div className="text-center py-12">
+              <Mountain className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">Trek packages coming soon!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredTreks.map((trek) => (
+                <Card key={trek._id} className="overflow-hidden hover:shadow-xl transition-all duration-500 group rounded-2xl border-0 shadow-md">
+                  <div className="relative h-64 overflow-hidden">
+                    {trek.image ? (
+                      <img
+                        src={trek.image}
+                        alt={trek.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                        <Mountain className="h-16 w-16 text-emerald-300" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold shadow-lg flex items-center gap-1">
+                      <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+                      {trek.price.toLocaleString()}
                     </div>
-                    <span className="text-gray-400">•</span>
-                    <span className="text-sm text-gray-600">{trek.difficulty}</span>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{trek.name}</h3>
-                  <p className="text-gray-600 mb-4">{trek.duration}</p>
-                  <Link href={`/treks/${trek.id}`}>
-                    <Button className="w-full bg-green-700 hover:bg-green-800">
-                      View Details
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-2 mb-2 text-sm text-gray-500">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>{trek.duration}</span>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-emerald-700 transition-colors">{trek.title}</h3>
+                    <p className="text-gray-500 text-sm mb-4 line-clamp-2">{trek.description}</p>
+                    <Link href={`/treks/${trek._id}`}>
+                      <Button className="w-full bg-green-700 hover:bg-green-800 rounded-xl">
+                        View Details
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-12">
             <Link href="/treks">

@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from "@/contexts/cart-context"
 import { CartSidebar } from "@/components/cart-sidebar"
 import { CartIcon } from "@/components/cart-icon"
+import { Providers } from "@/components/Providers"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,12 +25,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <CartProvider>
-          {children}
-          <CartIcon />
-          <CartSidebar />
-          <Toaster />
-        </CartProvider>
+        <Providers>
+          <CartProvider>
+            {children}
+            <CartIcon />
+            <CartSidebar />
+            <Toaster />
+          </CartProvider>
+        </Providers>
       </body>
     </html>
   )

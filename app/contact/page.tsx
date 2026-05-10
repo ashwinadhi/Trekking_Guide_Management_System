@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { Phone, Mail, MapPin, MessageCircle, Clock, Send } from "lucide-react"
+import { Phone, Mail, MapPin, MessageCircle, Clock, Send, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,19 +16,31 @@ export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
-    country: "",
-    trekInterest: "",
-    trekDates: "",
-    groupSize: "",
+    subject: "",
     message: "",
   })
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log("Form submitted:", formData)
-    alert("Thank you for your message! I'll get back to you within 24 hours.")
+    setStatus("loading")
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to send message")
+      setStatus("success")
+      alert("Message Sent Successfully!")
+      setFormData({ name: "", email: "", subject: "", message: "" })
+      setTimeout(() => setStatus("idle"), 3000)
+    } catch (err: any) {
+      console.error(err)
+      setStatus("error")
+      alert(err.message)
+    }
   }
 
   const handleChange = (field: string, value: string) => {
@@ -176,70 +188,15 @@ export default function ContactPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          value={formData.phone}
-                          onChange={(e) => handleChange("phone", e.target.value)}
-                          placeholder="+1-234-567-8900"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="country">Country</Label>
-                        <Input
-                          id="country"
-                          value={formData.country}
-                          onChange={(e) => handleChange("country", e.target.value)}
-                          placeholder="Your country"
-                        />
-                      </div>
-                    </div>
-
                     <div>
-                      <Label htmlFor="trekInterest">Trek of Interest</Label>
-                      <Select onValueChange={(value) => handleChange("trekInterest", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a trek package" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="everest-base-camp">Everest Base Camp Trek</SelectItem>
-                          <SelectItem value="annapurna-circuit">Annapurna Circuit Trek</SelectItem>
-                          <SelectItem value="langtang-valley">Langtang Valley Trek</SelectItem>
-                          <SelectItem value="manaslu-circuit">Manaslu Circuit Trek</SelectItem>
-                          <SelectItem value="gokyo-lakes">Gokyo Lakes Trek</SelectItem>
-                          <SelectItem value="upper-mustang">Upper Mustang Trek</SelectItem>
-                          <SelectItem value="custom">Custom Trek</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="trekDates">Preferred Trek Dates</Label>
-                        <Input
-                          id="trekDates"
-                          value={formData.trekDates}
-                          onChange={(e) => handleChange("trekDates", e.target.value)}
-                          placeholder="e.g., March 2024"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="groupSize">Group Size</Label>
-                        <Select onValueChange={(value) => handleChange("groupSize", value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Number of trekkers" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">Solo (1 person)</SelectItem>
-                            <SelectItem value="2">Couple (2 people)</SelectItem>
-                            <SelectItem value="3-4">Small group (3-4 people)</SelectItem>
-                            <SelectItem value="5-8">Medium group (5-8 people)</SelectItem>
-                            <SelectItem value="9+">Large group (9+ people)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Input
+                        id="subject"
+                        value={formData.subject}
+                        onChange={(e) => handleChange("subject", e.target.value)}
+                        placeholder="What is this regarding?"
+                        required
+                      />
                     </div>
 
                     <div>
@@ -253,10 +210,18 @@ export default function ContactPage() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full bg-green-700 hover:bg-green-800">
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Message
+                    <Button type="submit" disabled={status === "loading"} className="w-full bg-green-700 hover:bg-green-800">
+                      {status === "loading" ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
+                      ) : (
+                        <><Send className="mr-2 h-4 w-4" /> Send Message</>
+                      )}
                     </Button>
+                    {status === "success" && (
+                      <div className="text-center text-green-600 font-medium mt-2">
+                        Message Sent Successfully!
+                      </div>
+                    )}
                   </form>
                 </CardContent>
               </Card>

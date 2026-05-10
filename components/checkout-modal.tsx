@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { X, CreditCard, Wallet, DollarSign } from "lucide-react"
 import { useCart, type CartItem } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
+import { getSessionId } from "@/lib/session"
 
 interface CheckoutModalProps {
   isOpen: boolean
@@ -46,18 +47,66 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const sessionId = getSessionId()
 
-    toast({
-      title: "Equipment Rental Booked!",
-      description: `Your equipment rental has been confirmed. Total: $${total.toFixed(2)}`,
-    })
+      // Build cart items payload from current cart
+      const cartPayload = cartItems.map((item) => ({
+        itemId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        rentalDays: item.rentalDays,
+      }))
 
-    dispatch({ type: "CLEAR_CART" })
-    dispatch({ type: "CLOSE_CART" })
-    onClose()
-    setIsSubmitting(false)
+      // POST booking to MongoDB
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingType: "equipment",
+          sessionId,
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          paymentMethod: formData.paymentMethod,
+          totalPrice: total,
+          cartItems: cartPayload,
+          bookingDetails: {
+            pickupLocation: formData.pickupLocation,
+            returnLocation: formData.returnLocation,
+            pickupDate: formData.pickupDate,
+            returnDate: formData.returnDate,
+            specialRequests: formData.specialRequests,
+          },
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Booking failed")
+      }
+
+      // Clear the DB cart for this session after successful booking
+      await fetch(`/api/cart?sessionId=${sessionId}`, { method: "DELETE" })
+
+      toast({
+        title: "Equipment Rental Booked!",
+        description: `Your equipment rental has been confirmed. Total: $${total.toFixed(2)}`,
+      })
+
+      dispatch({ type: "CLEAR_CART" })
+      dispatch({ type: "CLOSE_CART" })
+      onClose()
+    } catch (error: any) {
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (!isOpen) return null

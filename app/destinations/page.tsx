@@ -1,173 +1,164 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Star, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import Header from "@/components/header"
-import Footer from "@/components/footer"
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowRight, MapPin, Loader2, Compass } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+
+interface Destination {
+  _id: string;
+  title: string;
+  description: string;
+  image: string;
+  slug: string;
+  trekCount: number;
+  availableGuides?: number;
+  priceRange?: string;
+}
 
 export default function DestinationsPage() {
-  const destinations = [
-    {
-      id: "kathmandu",
-      name: "Kathmandu Valley",
-      description: "UNESCO World Heritage sites, ancient temples, and vibrant culture",
-      image: "/images/sherpa-village.jpg",
-      guides: 8,
-      averageRating: 4.7,
-      highlights: ["Durbar Squares", "Swayambhunath Temple", "Boudhanath Stupa", "Local Markets"],
-      priceRange: "$25-45",
-      duration: "Half day to 3 days",
-    },
-    {
-      id: "pokhara",
-      name: "Pokhara",
-      description: "Adventure capital with lakes, mountains, and paragliding",
-      image: "/images/mountain-sunrise.jpg",
-      guides: 12,
-      averageRating: 4.8,
-      highlights: ["Phewa Lake", "Paragliding", "Sarangkot Sunrise", "Adventure Sports"],
-      priceRange: "$30-50",
-      duration: "1-5 days",
-    },
-    {
-      id: "chitwan",
-      name: "Chitwan National Park",
-      description: "Wildlife safari, jungle walks, and elephant encounters",
-      image: "/images/prayer-flags.jpg",
-      guides: 6,
-      averageRating: 4.6,
-      highlights: ["Jungle Safari", "Elephant Rides", "Bird Watching", "Tharu Culture"],
-      priceRange: "$35-55",
-      duration: "2-4 days",
-    },
-    {
-      id: "lumbini",
-      name: "Lumbini",
-      description: "Buddha's birthplace with monasteries and peaceful gardens",
-      image: "/images/everest-base-camp.jpg",
-      guides: 4,
-      averageRating: 4.9,
-      highlights: ["Maya Devi Temple", "Monasteries", "Ashoka Pillar", "Meditation"],
-      priceRange: "$25-40",
-      duration: "1-2 days",
-    },
-    {
-      id: "everest-region",
-      name: "Everest Region",
-      description: "High-altitude trekking and Sherpa culture",
-      image: "/images/everest-base-camp.jpg",
-      guides: 15,
-      averageRating: 4.9,
-      highlights: ["Everest Base Camp", "Sherpa Villages", "Monasteries", "Mountain Views"],
-      priceRange: "$40-60",
-      duration: "10-21 days",
-    },
-    {
-      id: "annapurna-region",
-      name: "Annapurna Region",
-      description: "Diverse landscapes from subtropical to alpine",
-      image: "/images/annapurna-circuit.jpg",
-      guides: 10,
-      averageRating: 4.8,
-      highlights: ["Thorong La Pass", "Hot Springs", "Traditional Villages", "Diverse Terrain"],
-      priceRange: "$35-55",
-      duration: "7-18 days",
-    },
-  ]
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDestinations() {
+      try {
+        const res = await fetch("/api/destinations");
+        if (res.ok) {
+          setDestinations(await res.json());
+        }
+      } catch (err) {
+        console.error("Failed to load destinations", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDestinations();
+  }, []);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
 
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-green-50 to-blue-50">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Explore Nepal's Destinations</h1>
-          <p className="text-xl text-gray-600">
-            From ancient temples to towering peaks, discover Nepal's incredible diversity with expert local guides
+      {/* Header section with gradient and dynamic text */}
+      <section className="relative py-24 bg-gradient-to-br from-emerald-900 via-teal-900 to-green-900 overflow-hidden">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-emerald-400 via-transparent to-transparent"></div>
+        <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <Badge className="mb-6 bg-emerald-500/20 text-emerald-300 border-emerald-500/30 px-4 py-1.5 text-sm font-medium tracking-wide">
+            EXPLORE NEPAL
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-sm tracking-tight">
+            Discover Breathtaking Destinations
+          </h1>
+          <p className="text-xl md:text-2xl text-emerald-100/90 font-light max-w-3xl mx-auto">
+            From ancient temples to towering peaks, experience Nepal's incredible diversity with our curated trekking routes.
           </p>
         </div>
       </section>
 
       {/* Destinations Grid */}
-      <section className="py-20">
+      <section className="py-20 flex-grow relative -mt-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {destinations.map((destination) => (
-              <Card key={destination.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative h-48">
-                  <Image
-                    src={destination.image || "/placeholder.svg"}
-                    alt={destination.name}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-white/90 text-gray-800">{destination.duration}</Badge>
-                  </div>
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="text-sm font-medium">{destination.averageRating}</span>
-                  </div>
-                </div>
-
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{destination.name}</h3>
-                  <p className="text-gray-600 mb-4">{destination.description}</p>
-
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Available Guides:</span>
-                      <span className="font-medium">{destination.guides} guides</span>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl shadow-xl border border-gray-100">
+              <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mb-4" />
+              <p className="text-xl text-gray-500 font-medium">Mapping destinations...</p>
+            </div>
+          ) : destinations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl shadow-xl border border-gray-100">
+              <Compass className="h-16 w-16 text-gray-300 mb-4" />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">No Destinations Found</h2>
+              <p className="text-gray-500">We are currently updating our trekking routes. Check back soon!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {destinations.map((dest) => (
+                <Card 
+                  key={dest._id} 
+                  className="group overflow-hidden hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-500 border-0 bg-white shadow-xl rounded-2xl flex flex-col"
+                >
+                  <div className="relative h-64 overflow-hidden bg-gray-200">
+                    <Image
+                      src={dest.image || "/placeholder.svg"}
+                      alt={dest.title}
+                      fill
+                      priority // Ensures the LCP image loads fast for better Page Speed
+                      className="object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300"></div>
+                    
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-md text-emerald-900 font-bold px-3 py-1 rounded-full shadow-lg text-sm flex items-center gap-1.5 border border-white/20">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                      Region
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Price Range:</span>
-                      <span className="font-medium">{destination.priceRange}/day</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-sm mb-2">Popular Activities:</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {destination.highlights.slice(0, 3).map((highlight, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {highlight}
-                        </Badge>
-                      ))}
+                    
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <h3 className="text-2xl font-bold drop-shadow-md">{dest.title}</h3>
                     </div>
                   </div>
 
-                  <Link href={`/guides?destination=${destination.id}`}>
-                    <Button className="w-full bg-green-700 hover:bg-green-800">
-                      Find Guides
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className="p-6 flex flex-col flex-grow">
+                    <p className="text-gray-600 line-clamp-3 mb-6 leading-relaxed flex-grow">
+                      {dest.description}
+                    </p>
+
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500 font-medium">Available Guides:</span>
+                        <span className="font-bold text-gray-800">{dest.availableGuides || 0} guides</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500 font-medium">Price Range:</span>
+                        <span className="font-bold text-gray-800">{dest.priceRange || "Varies"}/day</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-100">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Available Treks</span>
+                        <span className="text-lg font-bold text-emerald-700 flex items-center gap-1.5">
+                          <Compass className="h-5 w-5" />
+                          {dest.trekCount} Routes
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link href={`/treks?region=${dest.slug}`} className="block mt-auto">
+                      <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-6 font-bold shadow-lg shadow-emerald-600/20 group-hover:shadow-emerald-600/40 transition-all duration-300">
+                        View Treks in Region
+                        <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
       {/* Planning Help */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-24 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Need Help Planning Your Trip?</h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Our travel experts can help you create the perfect itinerary combining multiple destinations
+          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">Need Help Planning Your Trip?</h2>
+          <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Our travel experts can help you create the perfect custom itinerary combining multiple trekking destinations in Nepal.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/contact">
-              <Button size="lg" className="bg-green-700 hover:bg-green-800">
+              <Button size="lg" className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl h-14 px-8 text-lg font-bold shadow-xl shadow-emerald-700/20">
                 Get Custom Itinerary
               </Button>
             </Link>
             <Link href="/guides">
-              <Button size="lg" variant="outline">
-                Browse All Guides
+              <Button size="lg" variant="outline" className="rounded-xl h-14 px-8 text-lg font-bold border-2 border-emerald-200 text-emerald-800 hover:bg-emerald-50 hover:border-emerald-300">
+                Browse Expert Guides
               </Button>
             </Link>
           </div>
@@ -176,5 +167,5 @@ export default function DestinationsPage() {
 
       <Footer />
     </div>
-  )
+  );
 }

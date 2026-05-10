@@ -11,6 +11,7 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
+import { getSessionId } from "@/lib/session"
 
 export default function EquipmentPage() {
   const { dispatch } = useCart()
@@ -131,7 +132,8 @@ export default function EquipmentPage() {
       }
     })
 
-  const addToCart = (item: (typeof equipment)[0]) => {
+  const addToCart = async (item: (typeof equipment)[0]) => {
+    // 1. Update local cart state immediately (optimistic UI)
     dispatch({
       type: "ADD_ITEM",
       payload: {
@@ -143,6 +145,29 @@ export default function EquipmentPage() {
         rentalDays: 1,
       },
     })
+
+    // 2. Persist the cart item to MongoDB
+    try {
+      const sessionId = getSessionId()
+      await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          itemId: item.id,
+          itemType: "equipment",
+          name: item.name,
+          price: item.price,
+          quantity: 1,
+          rentalDays: 1,
+          image: item.image,
+          category: item.category,
+        }),
+      })
+    } catch (err) {
+      // Non-blocking — cart still works even if DB save fails
+      console.error("Failed to persist cart item to DB:", err)
+    }
 
     toast({
       title: "Added to Cart!",

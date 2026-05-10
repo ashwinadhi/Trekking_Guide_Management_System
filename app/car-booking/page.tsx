@@ -30,6 +30,7 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { getSessionId } from "@/lib/session"
 
 interface CarAvailability {
   date: string
@@ -287,7 +288,7 @@ export default function CarBookingPage() {
     closeCalendar()
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (
       !bookingData.car ||
       !bookingData.pickupDate ||
@@ -307,13 +308,54 @@ export default function CarBookingPage() {
       return
     }
 
-    toast({
-      title: "Car Booking Request Submitted! 🚗",
-      description: `Your booking for ${selectedCarModel?.name} has been submitted. We'll contact you within 30 minutes to confirm availability and payment details.`,
-      duration: 5000,
-    })
+    try {
+      // POST booking to MongoDB
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingType: "car",
+          sessionId: getSessionId(),
+          name: bookingData.name,
+          email: bookingData.email,
+          phone: bookingData.phone,
+          paymentMethod: bookingData.paymentMethod,
+          totalPrice: estimatedFare,
+          bookingDetails: {
+            carId: bookingData.car,
+            carName: selectedCarModel?.name,
+            carType: selectedCarModel?.type,
+            driverName: selectedCarModel?.driver?.name,
+            driverPhone: selectedCarModel?.driver?.phone,
+            pickupDate: bookingData.pickupDate,
+            pickupTime: bookingData.pickupTime,
+            pickupLocation: bookingData.pickupLocation,
+            dropoffLocation: bookingData.dropoffLocation,
+            estimatedFare,
+            specialRequests: bookingData.specialRequests,
+          },
+        }),
+      })
 
-    closeBookingForm()
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Booking failed")
+      }
+
+      toast({
+        title: "Car Booking Request Submitted! 🚗",
+        description: `Your booking for ${selectedCarModel?.name} has been submitted. We'll contact you within 30 minutes to confirm.`,
+        duration: 5000,
+      })
+
+      closeBookingForm()
+    } catch (error: any) {
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const getDaysInMonth = (date: Date) => {
