@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Star, Search, Filter, Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Star, Search, Filter, Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -19,105 +19,33 @@ export default function EquipmentPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
+  const [equipment, setEquipment] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const equipment = [
-    {
-      id: "1",
-      name: "Professional Trekking Backpack 65L",
-      price: 15,
-      image: "/placeholder.svg?height=200&width=200&text=Backpack",
-      category: "Backpacks",
-      rating: 4.8,
-      reviews: 124,
-      features: ["Waterproof", "Ergonomic", "Multiple Compartments"],
-      description: "High-quality 65L backpack perfect for multi-day treks",
-    },
-    {
-      id: "2",
-      name: "4-Season Mountaineering Tent",
-      price: 25,
-      image: "/placeholder.svg?height=200&width=200&text=Tent",
-      category: "Shelter",
-      rating: 4.9,
-      reviews: 89,
-      features: ["4-Season", "Lightweight", "Easy Setup"],
-      description: "Durable tent suitable for extreme weather conditions",
-    },
-    {
-      id: "3",
-      name: "Down Sleeping Bag (-10°C)",
-      price: 20,
-      image: "/placeholder.svg?height=200&width=200&text=Sleeping+Bag",
-      category: "Sleep System",
-      rating: 4.7,
-      reviews: 156,
-      features: ["Down Fill", "Compact", "Warm"],
-      description: "Premium down sleeping bag rated for -10°C",
-    },
-    {
-      id: "4",
-      name: "Trekking Poles (Pair)",
-      price: 8,
-      image: "/placeholder.svg?height=200&width=200&text=Poles",
-      category: "Accessories",
-      rating: 4.6,
-      reviews: 203,
-      features: ["Adjustable", "Lightweight", "Shock Absorbing"],
-      description: "Carbon fiber trekking poles with ergonomic grips",
-    },
-    {
-      id: "5",
-      name: "High-Altitude Hiking Boots",
-      price: 12,
-      image: "/placeholder.svg?height=200&width=200&text=Boots",
-      category: "Footwear",
-      rating: 4.8,
-      reviews: 167,
-      features: ["Waterproof", "Insulated", "Crampon Compatible"],
-      description: "Professional mountaineering boots for high altitude",
-    },
-    {
-      id: "6",
-      name: "Portable Camping Stove",
-      price: 10,
-      image: "/placeholder.svg?height=200&width=200&text=Stove",
-      category: "Cooking",
-      rating: 4.5,
-      reviews: 98,
-      features: ["Lightweight", "Wind Resistant", "Fuel Efficient"],
-      description: "Compact gas stove perfect for trekking meals",
-    },
-    {
-      id: "7",
-      name: "Insulated Jacket",
-      price: 18,
-      image: "/placeholder.svg?height=200&width=200&text=Jacket",
-      category: "Clothing",
-      rating: 4.7,
-      reviews: 134,
-      features: ["Down Insulation", "Packable", "Water Resistant"],
-      description: "Lightweight down jacket for cold weather protection",
-    },
-    {
-      id: "8",
-      name: "Water Purification System",
-      price: 6,
-      image: "/placeholder.svg?height=200&width=200&text=Filter",
-      category: "Accessories",
-      rating: 4.4,
-      reviews: 76,
-      features: ["Fast Filtration", "Portable", "Long Lasting"],
-      description: "Advanced water filter for safe drinking water",
-    },
-  ]
+  useEffect(() => {
+    async function loadEquipment() {
+      try {
+        const res = await fetch("/api/equipment")
+        if (res.ok) {
+          const data = await res.json()
+          setEquipment(data)
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadEquipment()
+  }, [])
 
-  const categories = ["all", "Backpacks", "Shelter", "Sleep System", "Footwear", "Clothing", "Cooking", "Accessories"]
+  const categories = ["all", ...new Set(equipment.map(e => e.category).filter(Boolean))]
 
   const filteredEquipment = equipment
     .filter(
       (item) =>
         (selectedCategory === "all" || item.category === selectedCategory) &&
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()),
+        item.title.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a, b) => {
       switch (sortBy) {
@@ -128,17 +56,16 @@ export default function EquipmentPage() {
         case "rating":
           return b.rating - a.rating
         default:
-          return a.name.localeCompare(b.name)
+          return a.title.localeCompare(b.title)
       }
     })
 
-  const addToCart = async (item: (typeof equipment)[0]) => {
-    // 1. Update local cart state immediately (optimistic UI)
+  const addToCart = async (item: any) => {
     dispatch({
       type: "ADD_ITEM",
       payload: {
-        id: item.id,
-        name: item.name,
+        id: item._id,
+        name: item.title,
         price: item.price,
         image: item.image,
         category: item.category,
@@ -237,52 +164,56 @@ export default function EquipmentPage() {
       {/* Equipment Grid */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredEquipment.map((item) => (
-              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-full h-48 object-cover" />
-                  <Badge className="absolute top-2 left-2 bg-white/90 text-gray-800">{item.category}</Badge>
-                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                    <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                    <span className="text-xs font-medium">{item.rating}</span>
-                  </div>
-                </div>
-
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{item.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
-
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {item.features.slice(0, 2).map((feature, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {feature}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
+          {loading ? (
+            <div className="flex justify-center p-20"><Loader2 className="animate-spin text-emerald-500 h-10 w-10" /></div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredEquipment.map((item) => (
+                <Card key={item._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative">
+                    <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-48 object-cover" />
+                    <Badge className="absolute top-2 left-2 bg-white/90 text-gray-800">{item.category}</Badge>
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
                       <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                      <span>{item.rating}</span>
-                      <span>({item.reviews})</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">${item.price}</div>
-                      <div className="text-xs text-gray-500">per day</div>
+                      <span className="text-xs font-medium">{item.rating}</span>
                     </div>
                   </div>
 
-                  <Button onClick={() => addToCart(item)} className="w-full bg-green-700 hover:bg-green-800">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{item.title}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
 
-          {filteredEquipment.length === 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {item.features?.slice(0, 2).map((feature: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {feature}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                        <span>{item.rating}</span>
+                        <span>({item.reviews || 0})</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">${item.price}</div>
+                        <div className="text-xs text-gray-500">per day</div>
+                      </div>
+                    </div>
+
+                    <Button onClick={() => addToCart(item)} className="w-full bg-green-700 hover:bg-green-800">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add to Cart
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {!loading && filteredEquipment.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">No equipment found matching your criteria.</p>
             </div>

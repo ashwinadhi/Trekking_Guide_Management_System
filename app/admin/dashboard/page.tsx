@@ -27,7 +27,9 @@ interface Trek {
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState({ services: 0, bookings: 0, treks: 0 });
+  const [stats, setStats] = useState({ services: 0, bookings: 0, treks: 0, rentals: 0 });
+  const [recentRentals, setRecentRentals] = useState<any[]>([]);
+  const [recentHotels, setRecentHotels] = useState<any[]>([]);
   const [treks, setTreks] = useState<Trek[]>([]);
   const [guides, setGuides] = useState<Guide[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,21 +64,33 @@ export default function AdminDashboardPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const [servicesRes, bookingsRes, treksRes, hotelBookingsRes] = await Promise.all([
-        fetch("/api/services"), fetch("/api/bookings"), fetch("/api/treks"), fetch("/api/hotel-bookings")
+      const [servicesRes, bookingsRes, treksRes, hotelBookingsRes, rentalsRes] = await Promise.all([
+        fetch("/api/services"),
+        fetch("/api/bookings"),
+        fetch("/api/treks"),
+        fetch("/api/hotel-bookings"),
+        fetch("/api/rentals")
       ]);
       const services = servicesRes.ok ? await servicesRes.json() : [];
       const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
       const hotelBookings = hotelBookingsRes.ok ? await hotelBookingsRes.json() : [];
+      const rentals = rentalsRes.ok ? await rentalsRes.json() : [];
       const treksData = treksRes.ok ? await treksRes.json() : [];
       
-      const totalBookings = (Array.isArray(bookings) ? bookings.length : 0) + (Array.isArray(hotelBookings) ? hotelBookings.length : 0);
+      const totalBookings = 
+        (Array.isArray(bookings) ? bookings.length : 0) + 
+        (Array.isArray(hotelBookings) ? hotelBookings.length : 0) +
+        (Array.isArray(rentals) ? rentals.length : 0);
       
       setStats({
         services: Array.isArray(services) ? services.length : 0,
         bookings: totalBookings,
         treks: Array.isArray(treksData) ? treksData.length : 0,
+        rentals: Array.isArray(rentals) ? rentals.length : 0
       });
+
+      setRecentRentals(Array.isArray(rentals) ? rentals.slice(0, 3) : []);
+      setRecentHotels(Array.isArray(hotelBookings) ? hotelBookings.slice(0, 3) : []);
     } catch (err) { console.error("Failed to fetch stats", err); }
   }, []);
 
@@ -272,6 +286,18 @@ export default function AdminDashboardPage() {
             </div>
             <p className="text-4xl font-bold text-white mb-1">{stats.bookings}</p>
             <p className="text-sm text-gray-400 font-medium">Total Bookings</p>
+          </div>
+        </div>
+
+        <div className="group relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm p-6 rounded-2xl border border-gray-700/50 hover:border-orange-500/30 transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl group-hover:bg-orange-500/10 transition-all duration-500" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2.5 bg-orange-500/10 rounded-xl"><Package className="h-6 w-6 text-orange-400" /></div>
+              <TrendingUp className="h-4 w-4 text-orange-400" />
+            </div>
+            <p className="text-4xl font-bold text-white mb-1">{stats.rentals}</p>
+            <p className="text-sm text-gray-400 font-medium">Rental Requests</p>
           </div>
         </div>
       </div>
@@ -482,6 +508,61 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Recent Alerts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-8 border-t border-gray-800">
+        {/* Hotel Alerts */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Package className="h-5 w-5 text-blue-400" />
+            Recent Hotel Bookings
+          </h2>
+          <div className="space-y-3">
+            {recentHotels.length === 0 ? (
+              <p className="text-gray-500 italic">No recent hotel bookings.</p>
+            ) : (
+              recentHotels.map((hotel) => (
+                <div key={hotel._id} className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-bold">{hotel.guestName}</p>
+                    <p className="text-xs text-gray-500">{hotel.roomType} • {hotel.hotelId?.name || "Hotel"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-emerald-400 font-black">${hotel.totalPrice}</p>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${hotel.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{hotel.status}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Gear Rental Alerts */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-orange-400" />
+            Recent Gear Rentals
+          </h2>
+          <div className="space-y-3">
+            {recentRentals.length === 0 ? (
+              <p className="text-gray-500 italic">No recent gear rentals.</p>
+            ) : (
+              recentRentals.map((rental) => (
+                <div key={rental._id} className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-bold">{rental.customerName}</p>
+                    <p className="text-xs text-gray-500">{rental.items?.length} Items • {rental.startDate}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-emerald-400 font-black">${rental.totalPrice}</p>
+                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${rental.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{rental.status}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,112 +1,127 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Star, MapPin, Calendar, Users, Quote } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useSession, signIn } from "next-auth/react";
+import { Star, MapPin, Calendar, Quote, Loader2, Send, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+
+interface Review {
+  _id: string;
+  userName: string;
+  userImage: string;
+  description: string;
+  rating: number;
+  slug: string;
+  createdAt: string;
+}
+
+interface Trek {
+  _id: string;
+  title: string;
+  slug: string;
+}
 
 export default function ReviewsPage() {
-  const reviews = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      country: "Australia",
-      trek: "Everest Base Camp Trek",
-      date: "October 2023",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "Ashwin was absolutely incredible! His knowledge of the mountains, local culture, and safety protocols made our Everest Base Camp trek unforgettable. He was always checking on our wellbeing, sharing fascinating stories about Sherpa culture, and ensuring we were properly acclimatized. His English is excellent, and he has such a warm, friendly personality. I felt completely safe under his guidance. Highly recommend!",
-      highlights: ["Excellent safety knowledge", "Great cultural insights", "Very professional"],
-    },
-    {
-      id: 2,
-      name: "Marco Rossi",
-      country: "Italy",
-      trek: "Annapurna Circuit Trek",
-      date: "September 2023",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "Best trekking experience of my life! Ashwin's passion for the mountains is contagious. He knew every trail, every village, and had connections everywhere we went. The local people clearly respect and trust him. He helped us when one of our group members got altitude sickness, arranging immediate descent and medical care. His care for trekkers goes beyond just guiding - he truly cares about your experience and safety.",
-      highlights: ["Local connections", "Emergency response", "Passionate guide"],
-    },
-    {
-      id: 3,
-      name: "Emma Thompson",
-      country: "United Kingdom",
-      trek: "Langtang Valley Trek",
-      date: "November 2023",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "Ashwin made our Langtang Valley trek absolutely perfect. As a solo female traveler, I felt completely safe and comfortable. He's incredibly knowledgeable about flora and fauna, pointing out different plants and birds along the way. His photography tips helped me capture amazing shots! The way he interacts with local communities shows his deep respect for the culture. Already planning my next trek with him!",
-      highlights: ["Solo female friendly", "Nature knowledge", "Photography guidance"],
-    },
-    {
-      id: 4,
-      name: "David Chen",
-      country: "Canada",
-      trek: "Gokyo Lakes Trek",
-      date: "April 2023",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "Ashwin's expertise and professionalism are unmatched. Our Gokyo Lakes trek was challenging, but he managed our pace perfectly, ensuring everyone in our group could complete it successfully. His weather reading skills saved us from a potential storm - he adjusted our itinerary and we avoided dangerous conditions. The sunrise from Gokyo Ri was breathtaking, and his local knowledge made all the difference.",
-      highlights: ["Weather expertise", "Pace management", "Local knowledge"],
-    },
-    {
-      id: 5,
-      name: "Lisa Mueller",
-      country: "Germany",
-      trek: "Upper Mustang Trek",
-      date: "May 2023",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "The Upper Mustang trek with Ashwin was like traveling back in time. His deep knowledge of Tibetan culture and history brought the ancient kingdom to life. He arranged special permissions and had connections that allowed us to visit places most tourists never see. His storytelling around the campfire each evening was magical. This wasn't just a trek - it was a cultural immersion.",
-      highlights: ["Cultural expertise", "Special access", "Great storyteller"],
-    },
-    {
-      id: 6,
-      name: "James Wilson",
-      country: "United States",
-      trek: "Manaslu Circuit Trek",
-      date: "March 2023",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "Ashwin guided our group of 6 friends on the Manaslu Circuit, and it exceeded all expectations. His physical fitness and endurance are impressive - he was always energetic and positive, even on the toughest days. He's also an excellent problem solver. When we had gear issues, he quickly found solutions. His first aid knowledge gave us confidence on this remote trek. Absolutely recommend him for challenging treks!",
-      highlights: ["Physical fitness", "Problem solving", "First aid certified"],
-    },
-    {
-      id: 7,
-      name: "Sophie Dubois",
-      country: "France",
-      trek: "Everest Base Camp Trek",
-      date: "October 2022",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "Ashwin is not just a guide, he's a friend for life! His genuine care for trekkers is evident in everything he does. He remembered everyone's names, dietary preferences, and personal stories. When I was struggling with altitude, he stayed with me, encouraged me, and helped me reach base camp safely. His positive attitude and infectious smile made even the hardest days enjoyable. Merci beaucoup, Ashwin!",
-      highlights: ["Personal attention", "Altitude support", "Positive attitude"],
-    },
-    {
-      id: 8,
-      name: "Robert Anderson",
-      country: "New Zealand",
-      trek: "Annapurna Circuit Trek",
-      date: "November 2022",
-      rating: 5,
-      avatar: "/placeholder.svg?height=60&width=60",
-      review:
-        "At 65, I was worried about keeping up on the Annapurna Circuit, but Ashwin's patient and encouraging approach made it possible. He adjusted our daily distances based on how I was feeling and never made me feel like a burden. His knowledge of high-altitude physiology is impressive. The tea house owners clearly know and respect him - we got the best rooms and meals everywhere we stayed!",
-      highlights: ["Patient with seniors", "Altitude physiology", "Great local relationships"],
-    },
-  ]
+  const { data: session } = useSession();
+  const { toast } = useToast();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [treks, setTreks] = useState<Trek[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
-  const totalReviews = reviews.length
+  const [formData, setFormData] = useState({
+    description: "",
+    rating: 5,
+    slug: "general",
+  });
+
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch("/api/reviews");
+      if (res.ok) setReviews(await res.json());
+      
+      const trekRes = await fetch("/api/treks");
+      if (trekRes.ok) setTreks(await trekRes.json());
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchReviews(); }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        toast({ 
+          title: "Success", 
+          description: "Thank you for your feedback, Ashwin and the team appreciate it!" 
+        });
+        setFormData({ description: "", rating: 5, slug: "general" });
+        setShowForm(false);
+        fetchReviews();
+      } else {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const staticReviews = [
+    {
+      _id: "static-1",
+      userName: "Sarah Johnson",
+      userImage: "/images/mountain-sunrise.jpg",
+      description: "Ashwin was absolutely incredible! His knowledge of the mountains, local culture, and safety protocols made our Everest Base Camp trek unforgettable. He was always checking on our wellbeing, sharing fascinating stories about Sherpa culture, and ensuring we were properly acclimatized. His English is excellent, and he has such a warm, friendly personality. I felt completely safe under his guidance. Highly recommend!",
+      rating: 5,
+      slug: "everest-base-camp-trek",
+      createdAt: "2023-10-01T00:00:00.000Z",
+    },
+    {
+      _id: "static-2",
+      userName: "Marco Rossi",
+      userImage: "/images/prayer-flags.jpg",
+      description: "Best trekking experience of my life! Ashwin's passion for the mountains is contagious. He knew every trail, every village, and had connections everywhere we went. The local people clearly respect and trust him. He helped us when one of our group members got altitude sickness, arranging immediate descent and medical care. His care for trekkers goes beyond just guiding - he truly cares about your experience and safety.",
+      rating: 5,
+      slug: "annapurna-circuit-trek",
+      createdAt: "2023-09-15T00:00:00.000Z",
+    },
+    {
+      _id: "static-3",
+      userName: "Emma Thompson",
+      userImage: "/images/sherpa-village.jpg",
+      description: "Ashwin made our Langtang Valley trek absolutely perfect. As a solo female traveler, I felt completely safe and comfortable. He's incredibly knowledgeable about flora and fauna, pointing out different plants and birds along the way. His photography tips helped me capture amazing shots! The way he interacts with local communities shows his deep respect for the culture. Already planning my next trek with him!",
+      rating: 5,
+      slug: "langtang-valley-trek",
+      createdAt: "2023-11-20T00:00:00.000Z",
+    },
+  ];
+
+  const allReviews = [...reviews, ...staticReviews];
+
+  const averageRating = allReviews.length > 0 
+    ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length 
+    : 5;
 
   return (
     <div className="min-h-screen">
@@ -160,132 +175,159 @@ export default function ReviewsPage() {
               <div className="text-4xl font-bold text-green-700 mb-2">{averageRating.toFixed(1)}</div>
               <div className="flex justify-center mb-2">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-6 w-6 text-yellow-400 fill-current" />
+                  <Star key={i} className={`h-6 w-6 ${i < Math.round(averageRating) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
                 ))}
               </div>
-              <p className="text-gray-600">Based on {totalReviews} verified reviews</p>
+              <p className="text-gray-600">Based on {allReviews.length} verified reviews</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Reviews Grid */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {reviews.map((review) => (
-              <Card key={review.id} className="p-6 hover:shadow-lg transition-shadow">
-                <CardContent className="p-0">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      {review.id === 1 ? (
-                        <Image
-                          src="/images/mountain-sunrise.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : review.id === 2 ? (
-                        <Image
-                          src="/images/prayer-flags.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : review.id === 3 ? (
-                        <Image
-                          src="/images/sherpa-village.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : review.id === 4 ? (
-                        <Image
-                          src="/images/everest-base-camp.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : review.id === 5 ? (
-                        <Image
-                          src="/images/annapurna-circuit.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : review.id === 6 ? (
-                        <Image
-                          src="/images/langtang-valley.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : review.id === 7 ? (
-                        <Image
-                          src="/images/manaslu-circuit.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <Image
-                          src="/images/gokyo-lakes.jpg"
-                          alt={review.name}
-                          width={60}
-                          height={60}
-                          className="rounded-full"
-                        />
-                      )}
-                      <div>
-                        <h3 className="font-bold text-lg">{review.name}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4" />
-                          <span>{review.country}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="h-4 w-4" />
-                          <span>{review.date}</span>
+      {/* Review Submission Area */}
+      <section className="py-12 bg-white">
+        <div className="max-w-3xl mx-auto px-4">
+          {!session ? (
+            <div className="p-8 rounded-2xl bg-gray-50 border border-gray-200 text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Share Your Adventure</h3>
+              <p className="text-gray-600 mb-6">Join our community and help others discover the magic of the Himalayas.</p>
+              <Button 
+                onClick={() => signIn("google")}
+                className="bg-green-700 hover:bg-green-800 text-white rounded-xl px-8"
+              >
+                Sign in with Google to Review
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {!showForm ? (
+                <Button 
+                  onClick={() => setShowForm(true)}
+                  className="w-full h-14 rounded-xl bg-green-700 hover:bg-green-800 text-white font-bold flex items-center justify-center gap-2"
+                >
+                  <Plus size={20} /> Write Your Review
+                </Button>
+              ) : (
+                <Card className="border-green-200 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
+                  <CardContent className="p-8">
+                    <div className="flex justify-between items-center mb-6">
+                      <div className="flex items-center gap-4">
+                        <img src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`} alt="" className="w-12 h-12 rounded-full border-2 border-green-500" />
+                        <div>
+                          <h4 className="text-gray-900 font-bold">{session.user?.name}</h4>
+                          <p className="text-xs text-gray-500">Submit your feedback</p>
                         </div>
                       </div>
+                      <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="rounded-full">
+                        <X size={20} />
+                      </Button>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {[...Array(review.rating)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                      ))}
+
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Which adventure are you reviewing?</Label>
+                        <select 
+                          value={formData.slug}
+                          onChange={(e) => setFormData({...formData, slug: e.target.value})}
+                          className="w-full bg-white border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-green-500/50"
+                        >
+                          <option value="general">General Experience</option>
+                          {treks.map(t => <option key={t._id} value={t.slug}>{t.title}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Your Rating</Label>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, rating: star })}
+                              className={`p-1 transition-all ${formData.rating >= star ? "text-yellow-400" : "text-gray-300"}`}
+                            >
+                              <Star className="h-8 w-8 fill-current" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Your Experience</Label>
+                        <Textarea 
+                          required
+                          value={formData.description}
+                          onChange={(e) => setFormData({...formData, description: e.target.value})}
+                          placeholder="Tell us about your journey..."
+                          className="rounded-xl min-h-[120px] focus:ring-green-500"
+                        />
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        disabled={submitting}
+                        className="w-full h-12 bg-green-700 hover:bg-green-800 text-white rounded-xl font-bold"
+                      >
+                        {submitting ? <Loader2 className="animate-spin" /> : <span className="flex items-center gap-2">Submit Review <Send size={18} /></span>}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Reviews Grid */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-10 w-10 animate-spin text-green-700" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {allReviews.map((review) => (
+                <Card key={review._id} className="p-6 hover:shadow-lg transition-shadow">
+                  <CardContent className="p-0">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={review.userImage}
+                          alt={review.userName}
+                          width={60}
+                          height={60}
+                          className="rounded-full object-cover"
+                        />
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-900">{review.userName}</h3>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(review.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[...Array(review.rating)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Trek Info */}
-                  <Badge variant="outline" className="mb-4">
-                    {review.trek}
-                  </Badge>
+                    <Badge variant="outline" className="mb-4 bg-green-50 text-green-700 border-green-200">
+                      {review.slug === "general" ? "General Experience" : review.slug.replace(/-/g, " ")}
+                    </Badge>
 
-                  {/* Review Text */}
-                  <div className="relative mb-4">
-                    <Quote className="absolute -top-2 -left-2 h-8 w-8 text-green-200" />
-                    <p className="text-gray-700 leading-relaxed pl-6">{review.review}</p>
-                  </div>
-
-                  {/* Highlights */}
-                  <div className="flex flex-wrap gap-2">
-                    {review.highlights.map((highlight, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {highlight}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <div className="relative mb-4">
+                      <Quote className="absolute -top-2 -left-2 h-8 w-8 text-green-100" />
+                      <p className="text-gray-700 leading-relaxed pl-6">{review.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -298,92 +340,28 @@ export default function ReviewsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="text-center p-6">
+            <Card className="text-center p-6 bg-white border-none shadow-sm">
               <div className="text-3xl font-bold text-green-700 mb-2">100%</div>
               <div className="text-gray-600 mb-2">Safety Record</div>
               <div className="text-sm text-gray-500">Zero accidents in 15+ years</div>
             </Card>
 
-            <Card className="text-center p-6">
+            <Card className="text-center p-6 bg-white border-none shadow-sm">
               <div className="text-3xl font-bold text-green-700 mb-2">4.9★</div>
               <div className="text-gray-600 mb-2">Average Rating</div>
               <div className="text-sm text-gray-500">Across all platforms</div>
             </Card>
 
-            <Card className="text-center p-6">
+            <Card className="text-center p-6 bg-white border-none shadow-sm">
               <div className="text-3xl font-bold text-green-700 mb-2">95%</div>
               <div className="text-gray-600 mb-2">Repeat Clients</div>
               <div className="text-sm text-gray-500">Book additional treks</div>
             </Card>
 
-            <Card className="text-center p-6">
+            <Card className="text-center p-6 bg-white border-none shadow-sm">
               <div className="text-3xl font-bold text-green-700 mb-2">30+</div>
               <div className="text-gray-600 mb-2">Countries</div>
               <div className="text-sm text-gray-500">Clients from worldwide</div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* External Reviews */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">Find Me on Review Platforms</h2>
-          <p className="text-xl text-gray-600 mb-12">Check out more reviews on popular travel platforms</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <div className="text-center">
-                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-8 w-8 text-green-700" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">TripAdvisor</h3>
-                <div className="flex justify-center mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">4.9/5 from 127 reviews</p>
-                <Button variant="outline" size="sm">
-                  View on TripAdvisor
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <div className="text-center">
-                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-8 w-8 text-blue-700" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Google Reviews</h3>
-                <div className="flex justify-center mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">4.8/5 from 89 reviews</p>
-                <Button variant="outline" size="sm">
-                  View on Google
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <div className="text-center">
-                <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="h-8 w-8 text-orange-700" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Booking.com</h3>
-                <div className="flex justify-center mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">9.2/10 from 64 reviews</p>
-                <Button variant="outline" size="sm">
-                  View on Booking.com
-                </Button>
-              </div>
             </Card>
           </div>
         </div>
@@ -398,7 +376,7 @@ export default function ReviewsPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/booking">
-              <Button size="lg" className="bg-white text-green-700 hover:bg-gray-100">
+              <Button size="lg" className="bg-white text-green-700 hover:bg-gray-100 h-14 px-8 rounded-xl">
                 Book Your Trek
               </Button>
             </Link>
@@ -406,7 +384,7 @@ export default function ReviewsPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-green-700 bg-transparent"
+                className="border-white text-white hover:bg-white hover:text-green-700 bg-transparent h-14 px-8 rounded-xl"
               >
                 Ask Questions
               </Button>
@@ -415,5 +393,26 @@ export default function ReviewsPage() {
         </div>
       </section>
     </div>
-  )
+  );
 }
+
+function CheckCircle2({ size, className }: { size: number, className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="3" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
+

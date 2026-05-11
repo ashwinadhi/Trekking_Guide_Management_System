@@ -17,13 +17,13 @@ export default function Footer() {
               Himalayas with our expert guides and comprehensive services.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-green-400 transition-colors">
+              <a href="https://facebook.com/technietrek" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-green-400 transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-300 hover:text-green-400 transition-colors">
+              <a href="https://instagram.com/technietrek" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-green-400 transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-300 hover:text-green-400 transition-colors">
+              <a href="https://twitter.com/technietrek" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-green-400 transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
             </div>
@@ -76,15 +76,26 @@ export default function Footer() {
             <ul className="space-y-2">
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 text-green-400" />
-                <span className="text-gray-300">+977-9841234567</span>
+                <a href="tel:+9779841234567" className="text-gray-300 hover:text-green-400 transition-colors">
+                  +977-9841234567
+                </a>
               </li>
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-green-400" />
-                <span className="text-gray-300">info@technietrekashwin.com</span>
+                <a href="mailto:ashwin@technietrek.com" className="text-gray-300 hover:text-green-400 transition-colors">
+                  ashwin@technietrek.com
+                </a>
               </li>
               <li className="flex items-start space-x-2">
                 <MapPin className="h-4 w-4 text-green-400 mt-1" />
-                <span className="text-gray-300">Thamel, Kathmandu, Nepal</span>
+                <a 
+                  href="https://maps.google.com/?q=Thamel,Kathmandu,Nepal" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-gray-300 hover:text-green-400 transition-colors"
+                >
+                  Thamel, Kathmandu, Nepal
+                </a>
               </li>
             </ul>
           </div>
@@ -92,7 +103,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-300">
-            © 2024 Technie Trek Ashwin. All rights reserved. | Designed for adventure enthusiasts.
+            © {new Date().getFullYear()} Technie Trek Ashwin. All rights reserved. | Designed for adventure enthusiasts.
           </p>
         </div>
       </div>

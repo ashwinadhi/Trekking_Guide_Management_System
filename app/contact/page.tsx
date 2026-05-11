@@ -105,7 +105,10 @@ export default function ContactPage() {
               </div>
               <h3 className="text-lg font-bold mb-2">WhatsApp</h3>
               <p className="text-gray-600 mb-4">Quick responses, photos, and voice messages</p>
-              <Button className="w-full bg-green-600 hover:bg-green-700">
+              <Button 
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={() => window.open("https://wa.me/9779841234567", "_blank")}
+              >
                 <MessageCircle className="mr-2 h-4 w-4" />
                 +977-9841234567
               </Button>
@@ -117,7 +120,11 @@ export default function ContactPage() {
               </div>
               <h3 className="text-lg font-bold mb-2">Email</h3>
               <p className="text-gray-600 mb-4">Detailed itineraries and information</p>
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent border-blue-200 hover:bg-blue-50"
+                onClick={() => window.location.href = "mailto:ashwin@technietrek.com"}
+              >
                 <Mail className="mr-2 h-4 w-4" />
                 ashwin@technietrek.com
               </Button>
@@ -129,7 +136,11 @@ export default function ContactPage() {
               </div>
               <h3 className="text-lg font-bold mb-2">Phone Call</h3>
               <p className="text-gray-600 mb-4">Direct conversation for urgent matters</p>
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent border-orange-200 hover:bg-orange-50"
+                onClick={() => window.location.href = "tel:+9779841234567"}
+              >
                 <Phone className="mr-2 h-4 w-4" />
                 +977-9841234567
               </Button>
@@ -141,7 +152,11 @@ export default function ContactPage() {
               </div>
               <h3 className="text-lg font-bold mb-2">Meet in Person</h3>
               <p className="text-gray-600 mb-4">Pre-trek briefing in Kathmandu</p>
-              <Button variant="outline" className="w-full bg-transparent">
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent border-purple-200 hover:bg-purple-50"
+                onClick={() => window.open("https://maps.google.com/?q=Thamel,Kathmandu", "_blank")}
+              >
                 <MapPin className="mr-2 h-4 w-4" />
                 Kathmandu, Nepal
               </Button>
@@ -369,12 +384,17 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500">Interactive Map</p>
-                  <p className="text-sm text-gray-400">Kathmandu, Nepal</p>
-                </div>
+              <div className="rounded-2xl overflow-hidden h-80 shadow-inner border border-gray-100">
+                <iframe 
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d56516.31625951665!2d85.291113!3d27.708955!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb198a307baabf%3A0xb5137c1bf18db1ea!2sKathmandu%2044600!5e0!3m2!1sen!2snp!4v1715420000000!5m2!1sen!2snp" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  allowFullScreen={true} 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Technie Trek Meeting Location"
+                ></iframe>
               </div>
             </div>
           </div>

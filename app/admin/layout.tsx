@@ -3,8 +3,9 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, LayoutDashboard, Package, Calendar, Mountain, Users, MessageSquare } from "lucide-react";
+import { LogOut, LayoutDashboard, Package, Calendar, Mountain, Users, MessageSquare, Car, MapPin } from "lucide-react";
 import { signOut } from "next-auth/react";
+import NotificationBell from "@/components/admin/notification-bell";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -21,8 +22,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/services", label: "Services", icon: Package },
     { href: "/admin/guides", label: "Manage Guides", icon: Users },
     { href: "/admin/destinations", label: "Destinations", icon: Mountain },
-    { href: "/admin/hotels", label: "Hotels", icon: Package }, // Reusing Package icon or we could use Building if imported
+    { href: "/admin/hotels", label: "Hotels", icon: Package }, 
+    { href: "/admin/equipment", label: "Equipment", icon: Package },
+    { href: "/admin/fleet", label: "Manage Fleet", icon: Car },
     { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+    { href: "/admin/rentals", label: "Rentals", icon: Package },
+    { href: "/admin/vehicle-bookings", label: "Vehicle Requests", icon: Calendar },
+    { href: "/admin/reviews", label: "Manage Reviews", icon: MessageSquare },
     { href: "/admin/inquiries", label: "Inquiries", icon: MessageSquare },
   ];
 
@@ -69,7 +75,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8 overflow-y-auto bg-gray-950">{children}</main>
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-950">
+        <header className="h-16 border-b border-gray-800 flex items-center justify-between px-8 bg-gray-900/50 backdrop-blur-md">
+          <div>
+            <h1 className="text-sm font-bold text-white uppercase tracking-widest">
+              {navItems.find(item => pathname.startsWith(item.href))?.label || "Admin Panel"}
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+            <div className="h-8 w-px bg-gray-800 mx-2" />
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-white">{session.user?.name}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Administrator</p>
+              </div>
+              <img 
+                src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`} 
+                alt="" 
+                className="w-8 h-8 rounded-full border border-gray-800"
+              />
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 p-8 overflow-y-auto">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
