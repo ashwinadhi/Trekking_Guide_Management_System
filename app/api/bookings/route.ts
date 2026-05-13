@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { Booking } from "@/models/Booking";
+import { Guide } from "@/models/Guide";
 
 /**
  * POST /api/bookings
@@ -39,14 +40,47 @@ export async function POST(req: NextRequest) {
 
     // ── Type-specific validation ─────────────────────────────────────
     switch (bookingType) {
-      case "guide":
-        if (!body.bookingDetails?.guide || !body.bookingDetails?.startDate) {
+      case "guide": {
+        const { guide: guideId, startDate, endDate } = body.bookingDetails || {};
+        if (!guideId || !startDate) {
           return NextResponse.json(
             { error: "Guide and start date are required for guide bookings" },
             { status: 400 }
           );
         }
+
+        const guide = await Guide.findById(guideId);
+        if (!guide) {
+          return NextResponse.json({ error: "Guide not found" }, { status: 404 });
+        }
+
+        // Check if guide is busy or on trek with a date range
+        if (guide.availabilityStatus !== "available" && guide.unavailableFrom && guide.unavailableTo) {
+          const bookingStart = new Date(startDate);
+          // If endDate is not provided, assume it's at least the same as startDate (1-day booking)
+          const bookingEnd = endDate ? new Date(endDate) : new Date(startDate);
+          
+          const unavailableFrom = new Date(guide.unavailableFrom);
+          const unavailableTo = new Date(guide.unavailableTo);
+
+          // Overlap check: bookingStart <= unavailableTo && bookingEnd >= unavailableFrom
+          const overlaps = bookingStart <= unavailableTo && bookingEnd >= unavailableFrom;
+
+          if (overlaps) {
+            return NextResponse.json(
+              { error: "This guide is unavailable during selected dates." },
+              { status: 400 }
+            );
+          }
+        } else if (guide.availabilityStatus === "busy") {
+          // If status is busy but no dates are set, assume fully unavailable
+          return NextResponse.json(
+            { error: "This guide is currently unavailable." },
+            { status: 400 }
+          );
+        }
         break;
+      }
 
       case "hotel":
         if (

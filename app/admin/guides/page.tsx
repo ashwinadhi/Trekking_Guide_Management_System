@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Users, Plus, Pencil, Trash2, X, Save, Loader2, ImagePlus,
   DollarSign, Clock, FileText, Globe, Briefcase, Camera,
-  CheckCircle, AlertCircle,
+  CheckCircle, AlertCircle, Calendar,
 } from "lucide-react";
 
 interface Guide {
@@ -16,7 +16,9 @@ interface Guide {
   services: string[];
   yearsExperience: number;
   languages: string[];
-  availability: string;
+  availabilityStatus: "available" | "on_trek" | "busy";
+  unavailableFrom: string | null;
+  unavailableTo: string | null;
   price: number;
   gallery: string[];
   reviews: { user: string; comment: string; rating: number }[];
@@ -26,7 +28,10 @@ interface Guide {
 const EMPTY_FORM = {
   name: "", profileImage: "", description: "", about: "",
   services: "", yearsExperience: "", languages: "",
-  availability: "Available", price: "", gallery: "",
+  availabilityStatus: "available", 
+  unavailableFrom: "",
+  unavailableTo: "",
+  price: "", gallery: "",
 };
 
 export default function AdminGuidesPage() {
@@ -65,7 +70,10 @@ export default function AdminGuidesPage() {
       name: g.name, profileImage: g.profileImage, description: g.description,
       about: g.about, services: g.services.join(", "),
       yearsExperience: g.yearsExperience.toString(), languages: g.languages.join(", "),
-      availability: g.availability, price: g.price.toString(),
+      availabilityStatus: g.availabilityStatus,
+      unavailableFrom: g.unavailableFrom ? new Date(g.unavailableFrom).toISOString().split('T')[0] : "",
+      unavailableTo: g.unavailableTo ? new Date(g.unavailableTo).toISOString().split('T')[0] : "",
+      price: g.price.toString(),
       gallery: g.gallery.join(", "),
     });
     setEditingId(g._id);
@@ -75,6 +83,19 @@ export default function AdminGuidesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (form.availabilityStatus !== "available") {
+      if (!form.unavailableFrom || !form.unavailableTo) {
+        setError("Please specify both 'From' and 'To' dates for On Trek/Busy status");
+        return;
+      }
+      if (new Date(form.unavailableFrom) > new Date(form.unavailableTo)) {
+        setError("'Unavailable From' cannot be after 'Unavailable To'");
+        return;
+      }
+    }
+
     setSubmitting(true); setError(""); setSuccess("");
     const payload = {
       name: form.name, profileImage: form.profileImage,
@@ -82,7 +103,9 @@ export default function AdminGuidesPage() {
       services: csvToArr(form.services),
       yearsExperience: Number(form.yearsExperience),
       languages: csvToArr(form.languages),
-      availability: form.availability,
+      availabilityStatus: form.availabilityStatus,
+      unavailableFrom: form.availabilityStatus !== "available" ? form.unavailableFrom : null,
+      unavailableTo: form.availabilityStatus !== "available" ? form.unavailableTo : null,
       price: Number(form.price),
       gallery: csvToArr(form.gallery),
     };
@@ -108,21 +131,21 @@ export default function AdminGuidesPage() {
   };
 
   const toggleAvailability = async (g: Guide) => {
-    const next = g.availability === "Available" ? "On Trek" : g.availability === "On Trek" ? "Busy" : "Available";
+    const next = g.availabilityStatus === "available" ? "on_trek" : g.availabilityStatus === "on_trek" ? "busy" : "available";
     try {
       const res = await fetch(`/api/guides/${g._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ availability: next }),
+        body: JSON.stringify({ availabilityStatus: next }),
       });
       if (!res.ok) throw new Error("Failed");
-      setSuccess(`Status → ${next}`); await fetchGuides();
+      setSuccess(`Status → ${next.replace("_", " ")}`); await fetchGuides();
     } catch { setError("Failed to update status"); }
   };
 
   const statusColor = (s: string) =>
-    s === "Available" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-    : s === "On Trek" ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+    s === "available" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+    : s === "on_trek" ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
     : "bg-red-500/10 text-red-400 border-red-500/20";
 
   if (loading) return (
@@ -188,16 +211,31 @@ export default function AdminGuidesPage() {
                 <input type="number" required min="0" value={form.yearsExperience} onChange={e => setForm({...form, yearsExperience: e.target.value})}
                   className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="15" />
               </div>
-              {/* Availability */}
+              {/* Availability Status */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><CheckCircle className="h-4 w-4 text-gray-500" />Availability</label>
-                <select value={form.availability} onChange={e => setForm({...form, availability: e.target.value})}
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><CheckCircle className="h-4 w-4 text-gray-500" />Availability Status</label>
+                <select value={form.availabilityStatus} onChange={e => setForm({...form, availabilityStatus: e.target.value as any})}
                   className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">
-                  <option value="Available">Available</option>
-                  <option value="On Trek">On Trek</option>
-                  <option value="Busy">Busy</option>
+                  <option value="available">Available</option>
+                  <option value="on_trek">On Trek</option>
+                  <option value="busy">Busy</option>
                 </select>
               </div>
+              {/* Conditional Date Fields */}
+              {form.availabilityStatus !== "available" && (
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Calendar className="h-4 w-4 text-emerald-500" />Unavailable From</label>
+                    <input type="date" required value={form.unavailableFrom} onChange={e => setForm({...form, unavailableFrom: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Calendar className="h-4 w-4 text-emerald-500" />Unavailable To</label>
+                    <input type="date" required value={form.unavailableTo} onChange={e => setForm({...form, unavailableTo: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
+                  </div>
+                </div>
+              )}
               {/* Languages */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Globe className="h-4 w-4 text-gray-500" />Languages (comma-separated)</label>
@@ -282,10 +320,17 @@ export default function AdminGuidesPage() {
                           </div>
                         </div>
                         {/* Availability toggle */}
-                        <button onClick={() => toggleAvailability(g)}
-                          className={`px-3 py-1 rounded-full text-xs font-bold border cursor-pointer transition-all hover:scale-105 ${statusColor(g.availability)}`}>
-                          {g.availability}
-                        </button>
+                        <div className="flex flex-col items-end gap-2">
+                          <button onClick={() => toggleAvailability(g)}
+                            className={`px-3 py-1 rounded-full text-xs font-bold border cursor-pointer transition-all hover:scale-105 capitalize ${statusColor(g.availabilityStatus)}`}>
+                            {g.availabilityStatus.replace("_", " ")}
+                          </button>
+                          {g.availabilityStatus !== "available" && g.unavailableFrom && (
+                            <span className="text-[10px] text-gray-500 font-medium">
+                              {new Date(g.unavailableFrom).toLocaleDateString()} - {new Date(g.unavailableTo!).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {/* Languages as badges */}
                       <div className="flex flex-wrap gap-1.5 mt-2 mb-2">

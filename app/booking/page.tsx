@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar, Users, CreditCard, Shield, CheckCircle, AlertCircle,
-  User, Edit, X, ChevronLeft, ChevronRight, Loader2,
+  User, Edit, X, ChevronLeft, ChevronRight, Loader2, Phone, Mail, Globe, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,9 @@ interface Guide {
   price: number;
   profileImage: string;
   description: string;
-  availability: "Available" | "On Trek" | "Busy";
+  availabilityStatus: "available" | "on_trek" | "busy";
+  unavailableFrom: string | null;
+  unavailableTo: string | null;
   bookedDates: string[];
   languages: string[];
   yearsExperience: number;
@@ -35,18 +38,21 @@ interface Trek {
   duration: string;
 }
 
-export default function BookingPage() {
+function BookingContent() {
   const [step, setStep] = useState(1);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedGuideForCalendar, setSelectedGuideForCalendar] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const searchParams = useSearchParams();
+  const guideParam = searchParams.get("guide");
 
   const [guides, setGuides] = useState<Guide[]>([]);
   const [treks, setTreks] = useState<Trek[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [bookingData, setBookingData] = useState({
-    guide: "",
+    guide: guideParam || "",
     serviceType: "",
     trek: "",
     startDate: "",
@@ -65,6 +71,13 @@ export default function BookingPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDateFromCalendar, setSelectedDateFromCalendar] = useState("");
+  const [showReviewModal, setShowReviewModal] = useState(false);
+
+  useEffect(() => {
+    if (guideParam && !bookingData.guide) {
+      setBookingData((prev) => ({ ...prev, guide: guideParam }));
+    }
+  }, [guideParam]);
 
   useEffect(() => {
     async function fetchData() {
@@ -186,7 +199,7 @@ export default function BookingPage() {
   };
 
   const handleGuideChange = (guideId: string) => {
-    setBookingData({ ...bookingData, guide: guideId, startDate: "" });
+    setBookingData({ ...bookingData, guide: guideId, startDate: "", serviceType: "trekking-guide" });
     setSelectedDateFromCalendar("");
   };
 
@@ -206,12 +219,43 @@ export default function BookingPage() {
   const isDateBooked = (date: string, guideId: string) => {
     const guide = guides.find((g) => g._id === guideId);
     if (!guide) return false;
-    if (guide.availability === "Busy") return true; // Entirely busy
+    
+    // Check global status first
+    if (guide.availabilityStatus === "busy" && !guide.unavailableFrom) return true;
+
+    // Check date range unavailability
+    if (guide.availabilityStatus !== "available" && guide.unavailableFrom && guide.unavailableTo) {
+      const checkDate = new Date(date);
+      const from = new Date(guide.unavailableFrom);
+      const to = new Date(guide.unavailableTo);
+      
+      // Ensure date comparison is accurate by setting hours to 0
+      checkDate.setHours(0,0,0,0);
+      from.setHours(0,0,0,0);
+      to.setHours(0,0,0,0);
+
+      if (checkDate >= from && checkDate <= to) return true;
+    }
+
+    // Check specific booked dates
     return guide.bookedDates?.includes(date) || false;
   };
 
+  const isStartDateValid = (startDate: string, guideId: string, duration: number) => {
+    const start = new Date(startDate);
+    for (let i = 0; i < duration; i++) {
+      const current = new Date(start);
+      current.setDate(start.getDate() + i);
+      // Adjust for timezone offset to get correct date string
+      const dateString = new Date(current.getTime() - (current.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
+      if (isDateBooked(dateString, guideId)) return false;
+    }
+    return true;
+  };
+
   const handleDateClick = (dateString: string, guideId: string) => {
-    if (!isDateBooked(dateString, guideId)) {
+    const duration = bookingData.trek ? parsedDuration : 1;
+    if (isStartDateValid(dateString, guideId, duration)) {
       setSelectedDateFromCalendar(dateString);
       setBookingData({ ...bookingData, startDate: dateString });
       closeCalendar();
@@ -226,6 +270,9 @@ export default function BookingPage() {
     const firstDay = getFirstDayOfMonth(currentMonth);
     const days = [];
 
+    // Current selected trek duration
+    const duration = bookingData.trek ? parsedDuration : 1;
+
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10"></div>);
     }
@@ -234,15 +281,23 @@ export default function BookingPage() {
       const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
       // Ensure date is formatted properly without timezone offset issues
       const dateString = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split("T")[0];
-      const booked = isDateBooked(dateString, selectedGuideForCalendar);
+      
+      const isDirectlyBooked = isDateBooked(dateString, selectedGuideForCalendar);
+      const isBlockedByDuration = !isDirectlyBooked && !isStartDateValid(dateString, selectedGuideForCalendar, duration);
+      
       const isPast = date < new Date(new Date().setHours(0,0,0,0));
+      const isSelected = dateString === bookingData.startDate;
 
       let cellClass = "h-10 flex items-center justify-center text-sm rounded transition-colors ";
 
       if (isPast) {
         cellClass += "text-gray-300 bg-gray-50 cursor-not-allowed";
-      } else if (booked) {
-        cellClass += "bg-red-100/50 text-red-400 cursor-not-allowed";
+      } else if (isSelected) {
+        cellClass += "bg-emerald-600 text-white font-bold ring-2 ring-emerald-500/20 shadow-md";
+      } else if (isDirectlyBooked) {
+        cellClass += "bg-red-100/50 text-red-400 cursor-not-allowed border border-red-100";
+      } else if (isBlockedByDuration) {
+        cellClass += "bg-amber-100/50 text-amber-600 cursor-not-allowed border border-amber-100";
       } else {
         cellClass += "bg-emerald-50 text-emerald-700 hover:bg-emerald-200 cursor-pointer font-medium border border-emerald-100";
       }
@@ -252,8 +307,9 @@ export default function BookingPage() {
           key={day}
           className={cellClass}
           onClick={() => {
-            if (!isPast && !booked) handleDateClick(dateString, selectedGuideForCalendar);
+            if (!isPast && !isDirectlyBooked && !isBlockedByDuration) handleDateClick(dateString, selectedGuideForCalendar);
           }}
+          title={isDirectlyBooked ? "Guide is busy on this day" : isBlockedByDuration ? "Trek would overlap with guide's busy period" : ""}
         >
           {day}
         </div>
@@ -292,14 +348,118 @@ export default function BookingPage() {
 
           <div className="grid grid-cols-7 gap-2 mb-6">{days}</div>
 
-          <div className="flex items-center justify-center gap-6 text-sm text-gray-600 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-4 text-xs text-gray-600 pt-4 border-t border-gray-100">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded-full"></div>
               <span>Available</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-100/50 rounded-full"></div>
-              <span>Booked</span>
+              <div className="w-3 h-3 bg-red-100/50 border border-red-200 rounded-full"></div>
+              <span>Busy / Booked</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-amber-100/50 border border-amber-200 rounded-full"></div>
+              <span title="The guide is available on this day, but a trek starting here would overlap with a future busy period">Trek Conflict</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-emerald-600 rounded-full shadow-sm"></div>
+              <span>Selected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReviewModal = () => {
+    if (!showReviewModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[60] p-4 overflow-y-auto">
+        <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+          <div className="bg-emerald-900 text-white p-8 relative">
+            <h3 className="text-2xl font-bold">Review Your Booking</h3>
+            <p className="text-emerald-200/80 mt-2">Please double check everything before we finalize.</p>
+            <Button variant="ghost" onClick={() => setShowReviewModal(false)} className="absolute top-6 right-6 text-emerald-100 hover:text-white hover:bg-emerald-800 rounded-full h-10 w-10 p-0">
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+
+          <div className="p-8 space-y-8">
+            {/* Trip Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <MapPin className="h-3 w-3" /> Trip Details
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                      <User className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Guide</p>
+                      <p className="font-bold text-gray-900">{selectedGuide?.name}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Start Date</p>
+                      <p className="font-bold text-gray-900">{bookingData.startDate}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <Shield className="h-3 w-3" /> Service & Price
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Service Type</p>
+                    <p className="font-bold text-gray-900 capitalize">{bookingData.serviceType.replace("-", " ")}</p>
+                  </div>
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <p className="text-xs text-emerald-600 font-bold uppercase">Total Amount Due</p>
+                    <p className="text-2xl font-black text-emerald-900">${totalPrice}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Details */}
+            <div className="space-y-4 pt-6 border-t border-gray-100">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <Users className="h-3 w-3" /> Personal Information
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                <div>
+                  <p className="text-xs text-gray-500">Full Name</p>
+                  <p className="font-semibold text-gray-900">{bookingData.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Email</p>
+                  <p className="font-semibold text-gray-900 truncate">{bookingData.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Phone</p>
+                  <p className="font-semibold text-gray-900">{bookingData.phone}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-6">
+              <Button variant="outline" onClick={() => setShowReviewModal(false)} className="flex-1 h-14 rounded-2xl font-bold border-gray-200">
+                Wait, let me edit
+              </Button>
+              <Button onClick={() => { setShowReviewModal(false); handleSubmit(); }} disabled={isSubmitting} className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20">
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle className="h-5 w-5 mr-2" />}
+                Submit Booking
+              </Button>
             </div>
           </div>
         </div>
@@ -361,7 +521,10 @@ export default function BookingPage() {
               { num: 4, label: "Confirm" }
             ].map((s, idx) => (
               <div key={s.num} className="flex items-center">
-                <div className={`flex items-center gap-2 ${step >= s.num ? "text-emerald-600" : "text-gray-400"}`}>
+                <div 
+                  onClick={() => setStep(s.num)}
+                  className={`flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${step >= s.num ? "text-emerald-600" : "text-gray-400"}`}
+                >
                   <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${step >= s.num ? "bg-emerald-600 text-white" : "bg-gray-100"}`}>
                     {s.num}
                   </div>
@@ -384,16 +547,14 @@ export default function BookingPage() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {guides.map((guide) => {
-                  const isAvailable = guide.availability === "Available";
                   return (
                     <div
                       key={guide._id}
-                      onClick={() => isAvailable && handleGuideChange(guide._id)}
-                      className={`relative border-2 rounded-2xl p-4 transition-all duration-200 ${
-                        !isAvailable ? "opacity-60 cursor-not-allowed bg-gray-50 border-gray-200" :
+                      onClick={() => handleGuideChange(guide._id)}
+                      className={`relative border-2 rounded-2xl p-4 transition-all duration-200 cursor-pointer ${
                         bookingData.guide === guide._id
                           ? "border-emerald-500 bg-emerald-50/50 shadow-md ring-2 ring-emerald-500/20"
-                          : "border-gray-100 bg-white hover:border-emerald-200 hover:shadow-sm cursor-pointer"
+                          : "border-gray-100 bg-white hover:border-emerald-200 hover:shadow-sm"
                       }`}
                     >
                       <div className="flex gap-4">
@@ -404,13 +565,17 @@ export default function BookingPage() {
                             <span className="text-emerald-600 font-semibold">${guide.price}/day</span>
                             <span className="text-xs text-gray-500">• {guide.yearsExperience} yrs exp</span>
                           </div>
-                          {!isAvailable ? (
-                            <span className="inline-block mt-2 px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-md">Busy / On Trek</span>
-                          ) : (
-                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openCalendar(guide._id); }} className="mt-2 h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 bg-emerald-50">
+                          <div className="flex flex-col gap-2 mt-2">
+                            {guide.availabilityStatus !== "available" && (
+                              <span className="inline-block px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-md capitalize w-fit">
+                                {guide.availabilityStatus.replace("_", " ")}
+                                {guide.unavailableFrom && ` (${new Date(guide.unavailableFrom).toLocaleDateString()} - ${new Date(guide.unavailableTo!).toLocaleDateString()})`}
+                              </span>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openCalendar(guide._id); }} className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 bg-emerald-50 w-fit">
                               <Calendar className="h-3 w-3 mr-1" /> View Availability
                             </Button>
-                          )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -433,7 +598,7 @@ export default function BookingPage() {
               <CardContent className="p-8 space-y-6 bg-white">
                 <div>
                   <Label className="text-gray-700 font-semibold mb-2 block">Choose Service Type *</Label>
-                  <Select onValueChange={(val) => setBookingData({ ...bookingData, serviceType: val })}>
+                  <Select onValueChange={(val) => setBookingData({ ...bookingData, serviceType: val })} value={bookingData.serviceType}>
                     <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12"><SelectValue placeholder="Select a service" /></SelectTrigger>
                     <SelectContent>
                       {serviceTypes.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -443,25 +608,70 @@ export default function BookingPage() {
 
                 <div>
                   <Label className="text-gray-700 font-semibold mb-2 block">Choose Trek Package (Optional)</Label>
-                  <Select onValueChange={(val) => setBookingData({ ...bookingData, trek: val })}>
-                    <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12"><SelectValue placeholder="Select a trek" /></SelectTrigger>
+                  <Select onValueChange={(val) => setBookingData({ ...bookingData, trek: val })} value={bookingData.trek}>
+                    <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12">
+                      <SelectValue placeholder={bookingData.startDate ? "Select an available trek" : "Select start date first"} />
+                    </SelectTrigger>
                     <SelectContent>
-                      {treks.map(t => <SelectItem key={t._id} value={t._id}>{t.title} - {t.duration} - ${t.price}</SelectItem>)}
+                      {treks.filter(t => {
+                        if (!bookingData.startDate || !bookingData.guide) return true;
+                        
+                        const duration = parseInt(t.duration.replace(/\D/g, "") || "1");
+                        const start = new Date(bookingData.startDate);
+                        
+                        for (let i = 0; i < duration; i++) {
+                          const current = new Date(start);
+                          current.setDate(start.getDate() + i);
+                          const dateString = current.toISOString().split('T')[0];
+                          if (isDateBooked(dateString, bookingData.guide)) return false;
+                        }
+                        return true;
+                      }).map(t => (
+                        <SelectItem key={t._id} value={t._id}>
+                          {t.title} ({t.duration}) - ${t.price}
+                        </SelectItem>
+                      ))}
+                      {bookingData.startDate && treks.filter(t => {
+                        const duration = parseInt(t.duration.replace(/\D/g, "") || "1");
+                        const start = new Date(bookingData.startDate);
+                        for (let i = 0; i < duration; i++) {
+                          const current = new Date(start);
+                          current.setDate(start.getDate() + i);
+                          const dateString = current.toISOString().split('T')[0];
+                          if (isDateBooked(dateString, bookingData.guide)) return false;
+                        }
+                        return true;
+                      }).length === 0 && (
+                        <div className="p-2 text-sm text-red-500 font-medium text-center">
+                          No treks available for this guide on selected dates.
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
+                  {!bookingData.startDate && (
+                    <p className="text-[10px] text-amber-600 mt-1 font-medium italic">* Please select a start date to see available packages for your guide.</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-gray-700 font-semibold mb-2 block">Start Date *</Label>
-                    <Input type="date" className="bg-gray-50 border-gray-200 rounded-xl h-12" value={bookingData.startDate} onChange={e => setBookingData({...bookingData, startDate: e.target.value})} />
-                    {selectedDateFromCalendar && bookingData.startDate === selectedDateFromCalendar && (
-                      <p className="text-xs font-semibold text-emerald-600 mt-2 flex items-center gap-1"><CheckCircle className="h-3 w-3"/> Verified from calendar</p>
+                    <div 
+                      onClick={() => openCalendar(bookingData.guide)}
+                      className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/30 transition-all h-12"
+                    >
+                      <span className={bookingData.startDate ? "text-gray-900 font-medium" : "text-gray-400"}>
+                        {bookingData.startDate || "Select date from calendar"}
+                      </span>
+                      <Calendar className="h-5 w-5 text-gray-400" />
+                    </div>
+                    {bookingData.startDate && (
+                      <p className="text-xs font-semibold text-emerald-600 mt-2 flex items-center gap-1"><CheckCircle className="h-3 w-3"/> Selected from availability calendar</p>
                     )}
                   </div>
                   <div>
                     <Label className="text-gray-700 font-semibold mb-2 block">Group Size *</Label>
-                    <Select onValueChange={(val) => setBookingData({ ...bookingData, groupSize: val })}>
+                    <Select onValueChange={(val) => setBookingData({ ...bookingData, groupSize: val })} value={bookingData.groupSize}>
                       <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12"><SelectValue placeholder="Number of trekkers" /></SelectTrigger>
                       <SelectContent>
                         {[1,2,3,4,5,6,7,8].map(n => <SelectItem key={n} value={n.toString()}>{n} Person{n>1?'s':''}</SelectItem>)}
@@ -575,8 +785,8 @@ export default function BookingPage() {
 
                 <div className="flex justify-between pt-6">
                   <Button variant="outline" onClick={handlePrevious} className="rounded-xl h-12 px-6 bg-white">Back</Button>
-                  <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-12 px-8 font-bold text-white shadow-lg shadow-emerald-600/30">
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle className="h-5 w-5 mr-2" />}
+                  <Button onClick={() => setShowReviewModal(true)} disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-12 px-8 font-bold text-white shadow-lg shadow-emerald-600/30">
+                    <CheckCircle className="h-5 w-5 mr-2" />
                     Confirm Booking
                   </Button>
                 </div>
@@ -588,8 +798,25 @@ export default function BookingPage() {
       </section>
 
       {showCalendar && renderCalendar()}
+      {showReviewModal && renderReviewModal()}
 
       <Footer />
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-grow flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+        <Footer />
+      </div>
+    }>
+      <BookingContent />
+    </Suspense>
   );
 }

@@ -20,7 +20,9 @@ interface Guide {
   services: string[];
   yearsExperience: number;
   languages: string[];
-  availability: string;
+  availabilityStatus: "available" | "on_trek" | "busy";
+  unavailableFrom: string | null;
+  unavailableTo: string | null;
   price: number;
   reviews: { user: string; comment: string; rating: number }[];
 }
@@ -46,7 +48,7 @@ export default function GuidesPage() {
   };
 
   const availabilityColor = (s: string) =>
-    s === "Available" ? "bg-green-600" : s === "On Trek" ? "bg-amber-600" : "bg-red-600";
+    s === "available" ? "bg-green-600" : s === "on_trek" ? "bg-amber-600" : "bg-red-600";
 
   return (
     <div className="min-h-screen">
@@ -139,8 +141,8 @@ export default function GuidesPage() {
                         <Users className="h-16 w-16 text-emerald-300" />
                       </div>
                     )}
-                    <Badge className={`absolute top-3 left-3 ${availabilityColor(guide.availability)} text-white`}>
-                      {guide.availability}
+                    <Badge className={`absolute top-3 left-3 ${availabilityColor(guide.availabilityStatus)} text-white capitalize`}>
+                      {guide.availabilityStatus.replace("_", " ")}
                     </Badge>
                     {guide.reviews.length > 0 && (
                       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">

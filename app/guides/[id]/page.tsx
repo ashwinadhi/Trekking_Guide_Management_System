@@ -21,7 +21,9 @@ interface Guide {
   services: string[];
   yearsExperience: number;
   languages: string[];
-  availability: string;
+  availabilityStatus: "available" | "on_trek" | "busy";
+  unavailableFrom: string | null;
+  unavailableTo: string | null;
   price: number;
   gallery: string[];
   reviews: { user: string; comment: string; rating: number }[];
@@ -72,7 +74,7 @@ export default function GuideProfilePage() {
     </div>
   );
 
-  const availColor = guide.availability === "Available" ? "bg-green-600" : guide.availability === "On Trek" ? "bg-amber-600" : "bg-red-600";
+  const availColor = guide.availabilityStatus === "available" ? "bg-green-600" : guide.availabilityStatus === "on_trek" ? "bg-amber-600" : "bg-red-600";
 
   return (
     <div className="min-h-screen">
@@ -93,9 +95,16 @@ export default function GuideProfilePage() {
                       <Users className="h-16 w-16 text-emerald-300" />
                     </div>
                   )}
-                  <Badge className={`absolute -top-2 -right-2 ${availColor} text-white`}>
-                    {guide.availability}
-                  </Badge>
+                  <div className="flex flex-col items-end absolute -top-2 -right-2">
+                    <Badge className={`${availColor} text-white capitalize`}>
+                      {guide.availabilityStatus.replace("_", " ")}
+                    </Badge>
+                    {guide.availabilityStatus !== "available" && guide.unavailableFrom && (
+                      <span className="bg-white/90 backdrop-blur-sm text-[10px] font-bold px-2 py-0.5 rounded shadow-sm mt-1 border border-gray-100">
+                        {new Date(guide.unavailableFrom).toLocaleDateString()} - {new Date(guide.unavailableTo!).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1">

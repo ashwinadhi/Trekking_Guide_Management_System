@@ -19,7 +19,9 @@ export interface IGuide extends Document {
   services: string[];
   yearsExperience: number;
   languages: string[];
-  availability: 'Available' | 'On Trek' | 'Busy';
+  availabilityStatus: 'available' | 'on_trek' | 'busy';
+  unavailableFrom: Date | null;
+  unavailableTo: Date | null;
   price: number;
   gallery: string[];
   reviews: IReview[];
@@ -81,10 +83,18 @@ const GuideSchema: Schema = new Schema(
       type: [String],
       default: [],
     },
-    availability: {
+    availabilityStatus: {
       type: String,
-      enum: ['Available', 'On Trek', 'Busy'],
-      default: 'Available',
+      enum: ['available', 'on_trek', 'busy'],
+      default: 'available',
+    },
+    unavailableFrom: {
+      type: Date,
+      default: null,
+    },
+    unavailableTo: {
+      type: Date,
+      default: null,
     },
     price: {
       type: Number,

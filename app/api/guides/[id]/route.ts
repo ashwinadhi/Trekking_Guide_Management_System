@@ -51,6 +51,10 @@ export async function PUT(
     if (body.price != null) body.price = Number(body.price);
     if (body.yearsExperience != null) body.yearsExperience = Number(body.yearsExperience);
 
+    // Parse dates if provided
+    if (body.unavailableFrom) body.unavailableFrom = new Date(body.unavailableFrom);
+    if (body.unavailableTo) body.unavailableTo = new Date(body.unavailableTo);
+
     const guide = await Guide.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
