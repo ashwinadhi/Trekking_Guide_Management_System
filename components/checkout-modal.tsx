@@ -10,6 +10,15 @@ import { X, Calendar, MapPin, Loader2, Package, MessageSquare, Users } from "luc
 import { useCart, type CartItem } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { getSessionId } from "@/lib/session"
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  isAddressText,
+  isSpecialRequestsText,
+  sanitizeFullNameInput,
+  normalizePhoneDigits,
+} from "@/lib/form-validation"
 
 interface CheckoutModalProps {
   isOpen: boolean
@@ -33,14 +42,45 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    if (name === "fullName") {
+      setFormData({ ...formData, fullName: sanitizeFullNameInput(value) })
+      return
+    }
+    if (name === "phone") {
+      setFormData({ ...formData, phone: normalizePhoneDigits(value) })
+      return
+    }
+    if (name === "email") {
+      setFormData({ ...formData, email: value.trimStart() })
+      return
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     })
   }
 
+  const checkoutFormValid =
+    isFullNameNoSpecial(formData.fullName) &&
+    isValidEmail(formData.email) &&
+    isTenDigitPhone(formData.phone) &&
+    !!formData.startDate &&
+    !!formData.endDate &&
+    isAddressText(formData.deliveryLocation) &&
+    isSpecialRequestsText(formData.specialRequests)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!checkoutFormValid) {
+      toast({
+        title: "Check your details",
+        description:
+          "Use letters only for your name, a valid email, 10-digit phone, delivery location (5+ characters), and notes (5+ characters).",
+        variant: "destructive",
+      })
+      return
+    }
     setIsSubmitting(true)
 
     try {
@@ -135,15 +175,15 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-xs uppercase tracking-wider text-gray-500">Full Name *</Label>
-                <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12" />
+                <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12" maxLength={100} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs uppercase tracking-wider text-gray-500">Email Address *</Label>
-                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12" />
+                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12" maxLength={254} />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="phone" className="text-xs uppercase tracking-wider text-gray-500">Phone Number *</Label>
-                <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12" />
+                <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12" maxLength={10} inputMode="numeric" pattern="\d{10}" />
               </div>
             </div>
           </div>
@@ -174,10 +214,10 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="specialRequests" className="text-xs uppercase tracking-wider text-gray-500">Special Requests / Notes</Label>
+                <Label htmlFor="specialRequests" className="text-xs uppercase tracking-wider text-gray-500">Special Requests / Notes *</Label>
                 <div className="relative">
                   <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Textarea id="specialRequests" name="specialRequests" value={formData.specialRequests} onChange={handleInputChange} className="bg-gray-800 border-gray-700 text-white rounded-xl min-h-[100px] pl-10 pt-2.5" placeholder="Any specific requirements or notes for your rental..." />
+                  <Textarea id="specialRequests" name="specialRequests" value={formData.specialRequests} onChange={handleInputChange} required minLength={5} maxLength={2000} className="bg-gray-800 border-gray-700 text-white rounded-xl min-h-[100px] pl-10 pt-2.5" placeholder="Any specific requirements or notes for your rental (required)..." />
                 </div>
               </div>
             </div>
@@ -194,7 +234,7 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !checkoutFormValid}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> : `Confirm Rental`}

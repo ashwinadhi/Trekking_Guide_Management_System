@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ChatPage() {
+  const { toast } = useToast()
   const [selectedChat, setSelectedChat] = useState("ashwin-guide")
   const [message, setMessage] = useState("")
 
@@ -123,11 +125,21 @@ export default function ChatPage() {
   const currentChat = conversations.find((conv) => conv.id === selectedChat)
 
   const handleSendMessage = () => {
-    if (message.trim()) {
-      // Handle sending message
-      console.log("Sending message:", message)
-      setMessage("")
+    const t = message.trim()
+    if (t.length < 1) {
+      toast({
+        title: "Message required",
+        description: "Please enter a message before sending.",
+        variant: "destructive",
+      })
+      return
     }
+    if (t.length > 2000) {
+      toast({ title: "Message too long", description: "Maximum 2000 characters.", variant: "destructive" })
+      return
+    }
+    console.log("Sending message:", t)
+    setMessage("")
   }
 
   return (
@@ -299,6 +311,8 @@ export default function ChatPage() {
                       placeholder="Type your message..."
                       onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                       className="pr-10"
+                      required
+                      maxLength={2000}
                     />
                     <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2">
                       <Smile className="h-4 w-4" />

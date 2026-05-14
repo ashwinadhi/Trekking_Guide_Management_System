@@ -16,6 +16,15 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
 import { getSessionId } from "@/lib/session";
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  isCountryName,
+  sanitizeFullNameInput,
+  sanitizeCountryInput,
+  normalizePhoneDigits,
+} from "@/lib/form-validation";
 
 interface Guide {
   _id: string;
@@ -40,6 +49,8 @@ interface Trek {
 
 function BookingContent() {
   const [step, setStep] = useState(1);
+  /** Highest step unlocked by completing the prior step (Next). Used so progress headings are not forward-clickable. */
+  const [furthestStepReached, setFurthestStepReached] = useState(1);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedGuideForCalendar, setSelectedGuideForCalendar] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -119,8 +130,15 @@ function BookingContent() {
     totalPrice += selectedGuide.price * parsedDuration;
   }
 
+  const personalDetailsValid =
+    isFullNameNoSpecial(bookingData.name) &&
+    isValidEmail(bookingData.email) &&
+    isTenDigitPhone(bookingData.phone) &&
+    isCountryName(bookingData.country);
+
   const handleNext = () => {
     if (step < 4) {
+      setFurthestStepReached((f) => Math.max(f, step + 1));
       setStep(step + 1);
       setTimeout(() => {
         document.getElementById("booking-form-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -139,6 +157,15 @@ function BookingContent() {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+    if (!personalDetailsValid) {
+      toast({
+        title: "Check your details",
+        description:
+          "Use letters only for full name and country, a valid email, and a 10-digit phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -187,6 +214,7 @@ function BookingContent() {
       });
       // Optionally reset form or redirect here
       setStep(1);
+      setFurthestStepReached(1);
     } catch (error: any) {
       toast({
         title: "Submission Failed",
@@ -519,11 +547,32 @@ function BookingContent() {
               { num: 2, label: "Service" },
               { num: 3, label: "Details" },
               { num: 4, label: "Confirm" }
-            ].map((s, idx) => (
+            ].map((s, idx) => {
+              const headingClickable =
+                s.num < step && s.num <= furthestStepReached;
+              return (
               <div key={s.num} className="flex items-center">
-                <div 
-                  onClick={() => setStep(s.num)}
-                  className={`flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ${step >= s.num ? "text-emerald-600" : "text-gray-400"}`}
+                <div
+                  role={headingClickable ? "button" : undefined}
+                  tabIndex={headingClickable ? 0 : undefined}
+                  onClick={() => {
+                    if (!headingClickable) return;
+                    setStep(s.num);
+                    setTimeout(() => {
+                      document.getElementById("booking-form-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 100);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!headingClickable) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setStep(s.num);
+                      setTimeout(() => {
+                        document.getElementById("booking-form-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 100);
+                    }
+                  }}
+                  className={`flex items-center gap-2 transition-opacity select-none ${headingClickable ? "cursor-pointer hover:opacity-80" : "cursor-default"} ${step >= s.num ? "text-emerald-600" : "text-gray-400"}`}
                 >
                   <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${step >= s.num ? "bg-emerald-600 text-white" : "bg-gray-100"}`}>
                     {s.num}
@@ -532,7 +581,8 @@ function BookingContent() {
                 </div>
                 {idx < 3 && <div className={`w-8 sm:w-12 h-0.5 mx-2 sm:mx-4 ${step > s.num ? "bg-emerald-600" : "bg-gray-200"}`} />}
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       </section>
@@ -716,25 +766,68 @@ function BookingContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-gray-700 font-semibold mb-2 block">Full Name *</Label>
-                    <Input className="bg-gray-50 border-gray-200 rounded-xl h-12" value={bookingData.name} onChange={e=>setBookingData({...bookingData, name:e.target.value})} required/>
+                    <Input
+                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      value={bookingData.name}
+                      onChange={(e) =>
+                        setBookingData({ ...bookingData, name: sanitizeFullNameInput(e.target.value) })
+                      }
+                      maxLength={100}
+                      autoComplete="name"
+                      required
+                      aria-invalid={bookingData.name.length > 0 && !isFullNameNoSpecial(bookingData.name)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Letters and spaces only (no numbers or symbols).</p>
                   </div>
                   <div>
                     <Label className="text-gray-700 font-semibold mb-2 block">Email Address *</Label>
-                    <Input type="email" className="bg-gray-50 border-gray-200 rounded-xl h-12" value={bookingData.email} onChange={e=>setBookingData({...bookingData, email:e.target.value})} required/>
+                    <Input
+                      type="email"
+                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      value={bookingData.email}
+                      onChange={(e) => setBookingData({ ...bookingData, email: e.target.value.trimStart() })}
+                      maxLength={254}
+                      autoComplete="email"
+                      required
+                      aria-invalid={bookingData.email.length > 0 && !isValidEmail(bookingData.email)}
+                    />
                   </div>
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Phone Number *</Label>
-                    <Input className="bg-gray-50 border-gray-200 rounded-xl h-12" value={bookingData.phone} onChange={e=>setBookingData({...bookingData, phone:e.target.value})} required/>
+                    <Label className="text-gray-700 font-semibold mb-2 block">Phone Number * (10 digits)</Label>
+                    <Input
+                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      value={bookingData.phone}
+                      onChange={(e) =>
+                        setBookingData({ ...bookingData, phone: normalizePhoneDigits(e.target.value) })
+                      }
+                      maxLength={10}
+                      inputMode="numeric"
+                      pattern="\d{10}"
+                      autoComplete="tel-national"
+                      required
+                      aria-invalid={bookingData.phone.length > 0 && !isTenDigitPhone(bookingData.phone)}
+                    />
                   </div>
                   <div>
                     <Label className="text-gray-700 font-semibold mb-2 block">Country *</Label>
-                    <Input className="bg-gray-50 border-gray-200 rounded-xl h-12" value={bookingData.country} onChange={e=>setBookingData({...bookingData, country:e.target.value})} required/>
+                    <Input
+                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      value={bookingData.country}
+                      onChange={(e) =>
+                        setBookingData({ ...bookingData, country: sanitizeCountryInput(e.target.value) })
+                      }
+                      maxLength={80}
+                      autoComplete="country-name"
+                      required
+                      aria-invalid={bookingData.country.length > 0 && !isCountryName(bookingData.country)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Letters and spaces only.</p>
                   </div>
                 </div>
 
                 <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
                   <Button variant="outline" onClick={handlePrevious} className="rounded-xl h-12 px-6">Back</Button>
-                  <Button onClick={handleNext} disabled={!bookingData.name || !bookingData.email || !bookingData.phone} className="bg-emerald-700 hover:bg-emerald-800 rounded-xl h-12 px-8 font-bold text-white">Review & Confirm</Button>
+                  <Button onClick={handleNext} disabled={!personalDetailsValid} className="bg-emerald-700 hover:bg-emerald-800 rounded-xl h-12 px-8 font-bold text-white">Review & Confirm</Button>
                 </div>
               </CardContent>
             </Card>

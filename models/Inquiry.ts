@@ -3,6 +3,7 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 export interface IInquiry extends Document {
   name: string;
   email: string;
+  phone: string;
   subject: string;
   message: string;
   isRead: boolean;
@@ -22,6 +23,11 @@ const InquirySchema: Schema = new Schema(
       required: [true, 'Email is required'],
       trim: true,
       lowercase: true,
+    },
+    phone: {
+      type: String,
+      required: [true, 'Phone is required'],
+      trim: true,
     },
     subject: {
       type: String,

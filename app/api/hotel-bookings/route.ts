@@ -4,19 +4,31 @@ import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { HotelBooking } from "@/models/HotelBooking";
 import { Hotel } from "@/models/Hotel";
+import { isFullNameNoSpecial, isValidEmail, isTenDigitPhone } from "@/lib/form-validation";
+import { queueHotelBookingConfirmation } from "@/lib/booking-confirmation-email";
 
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
     const body = await req.json();
 
-    const { hotelId, roomType, checkIn, checkOut, guestName, guestEmail, totalPrice } = body;
+    const { hotelId, roomType, checkIn, checkOut, guestName, guestEmail, guestPhone, totalPrice } = body;
 
-    if (!hotelId || !roomType || !checkIn || !checkOut || !guestName || !guestEmail) {
+    if (!hotelId || !roomType || !checkIn || !checkOut || !guestName || !guestEmail || !guestPhone) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
       );
+    }
+
+    if (!isFullNameNoSpecial(String(guestName))) {
+      return NextResponse.json({ error: "Guest name may only contain letters and spaces" }, { status: 400 });
+    }
+    if (!isValidEmail(String(guestEmail))) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+    if (!isTenDigitPhone(String(guestPhone))) {
+      return NextResponse.json({ error: "Phone must be exactly 10 digits" }, { status: 400 });
     }
 
     const hotel = await Hotel.findById(hotelId);
@@ -73,10 +85,21 @@ export async function POST(req: NextRequest) {
       roomType,
       checkIn,
       checkOut,
-      guestName,
-      guestEmail,
+      guestName: String(guestName).trim(),
+      guestEmail: String(guestEmail).trim().toLowerCase(),
+      guestPhone: String(guestPhone).replace(/\D/g, "").slice(0, 10),
       totalPrice: calculatedPrice,
       status: "pending",
+    });
+
+    queueHotelBookingConfirmation({
+      to: booking.guestEmail,
+      customerName: booking.guestName,
+      hotelName: hotel.name,
+      roomType: String(roomType),
+      checkIn: String(checkIn),
+      checkOut: String(checkOut),
+      totalPrice: calculatedPrice,
     });
 
     return NextResponse.json(booking, { status: 201 });

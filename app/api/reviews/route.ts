@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { Review } from "@/models/Review";
+import { isReviewDescription } from "@/lib/form-validation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -31,6 +32,13 @@ export async function POST(req: NextRequest) {
 
     if (!description || !rating || !slug) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (!isReviewDescription(String(description))) {
+      return NextResponse.json(
+        { error: "Review text must be between 20 and 4000 characters" },
+        { status: 400 }
+      );
     }
 
     const review = await Review.create({

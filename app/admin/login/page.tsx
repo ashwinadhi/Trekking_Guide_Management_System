@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { isValidEmail } from "@/lib/form-validation";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,15 @@ export default function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Password is required.");
+      return;
+    }
 
     const res = await signIn("credentials", {
       redirect: false,

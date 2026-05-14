@@ -47,7 +47,7 @@ export default function AdminBookingsPage() {
         ...hb,
         name: hb.guestName,
         email: hb.guestEmail,
-        phone: "N/A",
+        phone: hb.guestPhone || "—",
         bookingType: "hotel",
         isHotelBooking: true,
         totalPrice: hb.totalPrice || 0,

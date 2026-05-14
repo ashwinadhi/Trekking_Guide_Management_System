@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, Calendar, MapPin, Loader2, Car, User, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  sanitizeFullNameInput,
+  normalizePhoneDigits,
+} from "@/lib/form-validation"
 
 interface Vehicle {
   _id: string;
@@ -50,8 +57,30 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
   }, [isOpen, vehicle])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    if (name === "fullName") {
+      setFormData({ ...formData, fullName: sanitizeFullNameInput(value) })
+      return
+    }
+    if (name === "phone") {
+      setFormData({ ...formData, phone: normalizePhoneDigits(value) })
+      return
+    }
+    if (name === "email") {
+      setFormData({ ...formData, email: value.trimStart() })
+      return
+    }
+    setFormData({ ...formData, [name]: value })
   }
+
+  const vehicleFormValid =
+    isFullNameNoSpecial(formData.fullName) &&
+    isValidEmail(formData.email) &&
+    isTenDigitPhone(formData.phone) &&
+    !!formData.pickupLocation &&
+    !!formData.dropOffLocation &&
+    !!formData.startDate &&
+    !!formData.endDate
 
   // Helper to calculate total days and price
   const calculateTotal = () => {
@@ -69,6 +98,15 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!vehicleFormValid) {
+      toast({
+        title: "Check your details",
+        description: "Use letters only for name, valid email, 10-digit phone, and complete all fields.",
+        variant: "destructive",
+      })
+      return
+    }
     
     // Check if dates are blocked
     if (isDateDisabled(formData.startDate) || isDateDisabled(formData.endDate)) {
@@ -167,16 +205,16 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Full Name</Label>
-                  <Input name="fullName" value={formData.fullName} onChange={handleInputChange} required className="bg-gray-900 border-gray-800 rounded-2xl h-12 text-white" />
+                  <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Full Name *</Label>
+                  <Input name="fullName" value={formData.fullName} onChange={handleInputChange} required className="bg-gray-900 border-gray-800 rounded-2xl h-12 text-white" maxLength={100} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Email Address</Label>
-                  <Input name="email" type="email" value={formData.email} onChange={handleInputChange} required className="bg-gray-900 border-gray-800 rounded-2xl h-12 text-white" />
+                  <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Email Address *</Label>
+                  <Input name="email" type="email" value={formData.email} onChange={handleInputChange} required className="bg-gray-900 border-gray-800 rounded-2xl h-12 text-white" maxLength={254} />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Phone Number</Label>
-                  <Input name="phone" value={formData.phone} onChange={handleInputChange} required className="bg-gray-900 border-gray-800 rounded-2xl h-12 text-white" />
+                  <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Phone * (10 digits)</Label>
+                  <Input name="phone" value={formData.phone} onChange={handleInputChange} required className="bg-gray-900 border-gray-800 rounded-2xl h-12 text-white" maxLength={10} inputMode="numeric" pattern="\d{10}" />
                 </div>
 
                 {/* Pickup & Drop-off Selects (Parsed from comma-separated string) */}
@@ -251,7 +289,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
               <div className="pt-4">
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting} 
+                  disabled={isSubmitting || !vehicleFormValid} 
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-xl shadow-emerald-900/20"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> : (

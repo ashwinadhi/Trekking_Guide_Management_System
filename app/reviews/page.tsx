@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { isReviewDescription } from "@/lib/form-validation";
 
 interface Review {
   _id: string;
@@ -60,6 +61,14 @@ export default function ReviewsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isReviewDescription(formData.description)) {
+      toast({
+        title: "Check your review",
+        description: "Please write at least 20 characters (up to 4000).",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/reviews", {
@@ -260,6 +269,8 @@ export default function ReviewsPage() {
                           onChange={(e) => setFormData({...formData, description: e.target.value})}
                           placeholder="Tell us about your journey..."
                           className="rounded-xl min-h-[120px] focus:ring-green-500"
+                          minLength={20}
+                          maxLength={4000}
                         />
                       </div>
 

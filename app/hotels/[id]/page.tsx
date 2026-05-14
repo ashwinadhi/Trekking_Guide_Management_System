@@ -13,6 +13,13 @@ import Footer from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  sanitizeFullNameInput,
+  normalizePhoneDigits,
+} from "@/lib/form-validation";
 
 interface Room {
   type: "Standard" | "Deluxe";
@@ -50,6 +57,7 @@ export default function HotelDetailPage() {
   const [selectedRoom, setSelectedRoom] = useState<"Standard" | "Deluxe">("Standard");
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
@@ -70,8 +78,20 @@ export default function HotelDetailPage() {
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dateRange.from || !dateRange.to || !guestName || !guestEmail) {
+    if (!dateRange.from || !dateRange.to || !guestName || !guestEmail || !guestPhone) {
       toast({ title: "Please fill all fields and select dates", variant: "destructive" });
+      return;
+    }
+    if (!isFullNameNoSpecial(guestName)) {
+      toast({ title: "Invalid name", description: "Use letters and spaces only.", variant: "destructive" });
+      return;
+    }
+    if (!isValidEmail(guestEmail)) {
+      toast({ title: "Invalid email", variant: "destructive" });
+      return;
+    }
+    if (!isTenDigitPhone(guestPhone)) {
+      toast({ title: "Invalid phone", description: "Enter exactly 10 digits.", variant: "destructive" });
       return;
     }
 
@@ -86,7 +106,8 @@ export default function HotelDetailPage() {
           checkIn: format(dateRange.from, 'yyyy-MM-dd'),
           checkOut: format(dateRange.to, 'yyyy-MM-dd'),
           guestName,
-          guestEmail
+          guestEmail,
+          guestPhone
         })
       });
 
@@ -97,6 +118,7 @@ export default function HotelDetailPage() {
       setDateRange({});
       setGuestName("");
       setGuestEmail("");
+      setGuestPhone("");
     } catch (error: any) {
       toast({ title: "Booking Failed", description: error.message, variant: "destructive" });
     } finally {
@@ -273,12 +295,40 @@ export default function HotelDetailPage() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Full Name</label>
-                <Input required value={guestName} onChange={e=>setGuestName(e.target.value)} className="h-12 rounded-xl bg-gray-50 border-gray-200" placeholder="John Doe" />
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Full Name *</label>
+                <Input
+                  required
+                  value={guestName}
+                  onChange={(e) => setGuestName(sanitizeFullNameInput(e.target.value))}
+                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
+                  placeholder="John Doe"
+                  maxLength={100}
+                />
+                <p className="text-xs text-gray-500 mt-1">Letters and spaces only.</p>
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Email</label>
-                <Input type="email" required value={guestEmail} onChange={e=>setGuestEmail(e.target.value)} className="h-12 rounded-xl bg-gray-50 border-gray-200" placeholder="john@example.com" />
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Email *</label>
+                <Input
+                  type="email"
+                  required
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value.trimStart())}
+                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
+                  placeholder="john@example.com"
+                  maxLength={254}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Phone * (10 digits)</label>
+                <Input
+                  required
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(normalizePhoneDigits(e.target.value))}
+                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
+                  placeholder="9800000000"
+                  maxLength={10}
+                  inputMode="numeric"
+                />
               </div>
 
               <Button type="submit" disabled={submitting} className="w-full h-14 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-emerald-600/20">

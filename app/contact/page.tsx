@@ -11,11 +11,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  isSubjectLine,
+  isMessageBody,
+  sanitizeFullNameInput,
+  normalizePhoneDigits,
+} from "@/lib/form-validation"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     subject: "",
     message: "",
   })
@@ -23,6 +33,26 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isFullNameNoSpecial(formData.name)) {
+      alert("Full name may only contain letters and spaces (at least 2 characters).")
+      return
+    }
+    if (!isValidEmail(formData.email)) {
+      alert("Please enter a valid email address.")
+      return
+    }
+    if (!isTenDigitPhone(formData.phone)) {
+      alert("Phone must be exactly 10 digits.")
+      return
+    }
+    if (!isSubjectLine(formData.subject)) {
+      alert("Subject must be at least 3 characters and use only allowed characters.")
+      return
+    }
+    if (!isMessageBody(formData.message)) {
+      alert("Message must be at least 10 characters.")
+      return
+    }
     setStatus("loading")
     try {
       const res = await fetch("/api/contact", {
@@ -34,7 +64,7 @@ export default function ContactPage() {
       if (!res.ok) throw new Error(data.error || "Failed to send message")
       setStatus("success")
       alert("Message Sent Successfully!")
-      setFormData({ name: "", email: "", subject: "", message: "" })
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
       setTimeout(() => setStatus("idle"), 3000)
     } catch (err: any) {
       console.error(err)
@@ -187,9 +217,13 @@ export default function ContactPage() {
                         <Input
                           id="name"
                           value={formData.name}
-                          onChange={(e) => handleChange("name", e.target.value)}
+                          onChange={(e) =>
+                            handleChange("name", sanitizeFullNameInput(e.target.value))
+                          }
+                          maxLength={100}
                           required
                         />
+                        <p className="text-xs text-gray-500 mt-1">Letters and spaces only.</p>
                       </div>
                       <div>
                         <Label htmlFor="email">Email Address *</Label>
@@ -197,10 +231,23 @@ export default function ContactPage() {
                           id="email"
                           type="email"
                           value={formData.email}
-                          onChange={(e) => handleChange("email", e.target.value)}
+                          onChange={(e) => handleChange("email", e.target.value.trimStart())}
+                          maxLength={254}
                           required
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="phone">Phone * (10 digits)</Label>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => handleChange("phone", normalizePhoneDigits(e.target.value))}
+                        maxLength={10}
+                        inputMode="numeric"
+                        required
+                      />
                     </div>
 
                     <div>
@@ -215,14 +262,18 @@ export default function ContactPage() {
                     </div>
 
                     <div>
-                      <Label htmlFor="message">Message</Label>
+                      <Label htmlFor="message">Message *</Label>
                       <Textarea
                         id="message"
                         value={formData.message}
                         onChange={(e) => handleChange("message", e.target.value)}
                         placeholder="Tell me about your trekking experience, fitness level, specific interests, or any questions you have..."
                         rows={5}
+                        required
+                        minLength={10}
+                        maxLength={5000}
                       />
+                      <p className="text-xs text-gray-500 mt-1">Minimum 10 characters.</p>
                     </div>
 
                     <Button type="submit" disabled={status === "loading"} className="w-full bg-green-700 hover:bg-green-800">

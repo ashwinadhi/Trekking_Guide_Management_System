@@ -4,6 +4,13 @@ import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { Booking } from "@/models/Booking";
 import { Guide } from "@/models/Guide";
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  isCountryName,
+} from "@/lib/form-validation";
+import { queueUnifiedBookingConfirmation } from "@/lib/booking-confirmation-email";
 
 /**
  * POST /api/bookings
@@ -30,10 +37,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(String(email))) {
       return NextResponse.json(
         { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    if (!isFullNameNoSpecial(String(name))) {
+      return NextResponse.json(
+        { error: "Name may only contain letters and spaces" },
         { status: 400 }
       );
     }
@@ -52,6 +65,21 @@ export async function POST(req: NextRequest) {
         const guide = await Guide.findById(guideId);
         if (!guide) {
           return NextResponse.json({ error: "Guide not found" }, { status: 404 });
+        }
+
+        const phone = body.phone;
+        const country = body.bookingDetails?.country;
+        if (!phone || !isTenDigitPhone(String(phone))) {
+          return NextResponse.json(
+            { error: "Phone must be exactly 10 digits" },
+            { status: 400 }
+          );
+        }
+        if (!country || !isCountryName(String(country))) {
+          return NextResponse.json(
+            { error: "Country may only contain letters and spaces" },
+            { status: 400 }
+          );
         }
 
         // Check if guide is busy or on trek with a date range
@@ -138,7 +166,7 @@ export async function POST(req: NextRequest) {
       bookingType: bookingType || "service",
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      phone: body.phone || "",
+      phone: body.phone ? String(body.phone).replace(/\D/g, "").slice(0, 10) : "",
 
       // Legacy fields (kept for backward compat with admin dashboard)
       serviceId: body.serviceId || undefined,
@@ -154,6 +182,17 @@ export async function POST(req: NextRequest) {
       totalPrice: body.totalPrice ?? 0,
       paymentMethod: body.paymentMethod || "",
       status: "pending",
+    });
+
+    queueUnifiedBookingConfirmation({
+      email: String(booking.email),
+      name: String(booking.name),
+      bookingType: String(booking.bookingType || "service"),
+      totalPrice: booking.totalPrice,
+      bookingDetails: (booking.bookingDetails || {}) as Record<string, unknown>,
+      cartItems: (booking.cartItems || []) as Array<Record<string, unknown>>,
+      message: booking.message,
+      date: booking.date,
     });
 
     return NextResponse.json(booking, { status: 201 });

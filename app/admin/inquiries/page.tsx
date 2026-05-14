@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageSquare, Trash2, CheckCircle, Loader2, AlertCircle, Mail, User, Clock } from "lucide-react";
+import { MessageSquare, Trash2, CheckCircle, Loader2, AlertCircle, Mail, User, Clock, Phone } from "lucide-react";
 
 interface Inquiry {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   subject: string;
   message: string;
   isRead: boolean;
@@ -141,6 +142,10 @@ export default function AdminInquiriesPage() {
                           <a href={`mailto:${inquiry.email}`} className="hover:text-emerald-400 transition-colors">
                             {inquiry.email}
                           </a>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                          <Phone className="h-4 w-4 text-gray-500" />
+                          <span>{inquiry.phone ?? "—"}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
                           <Clock className="h-3.5 w-3.5" />

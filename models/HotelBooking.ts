@@ -7,6 +7,7 @@ export interface IHotelBooking extends Document {
   checkOut: string; // YYYY-MM-DD
   guestName: string;
   guestEmail: string;
+  guestPhone: string;
   totalPrice: number;
   status: 'confirmed' | 'pending' | 'cancelled';
   createdAt: Date;
@@ -40,6 +41,11 @@ const HotelBookingSchema: Schema = new Schema(
     guestEmail: {
       type: String,
       required: true,
+    },
+    guestPhone: {
+      type: String,
+      required: true,
+      trim: true,
     },
     totalPrice: {
       type: Number,

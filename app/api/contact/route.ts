@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { Inquiry } from "@/models/Inquiry";
+import {
+  isValidEmail,
+  isTenDigitPhone,
+  isFullNameNoSpecial,
+  isSubjectLine,
+  isMessageBody,
+} from "@/lib/form-validation";
 
 /**
  * GET /api/contact
@@ -35,19 +42,38 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const body = await req.json();
 
-    const { name, email, subject, message } = body;
-    if (!name || !email || !subject || !message) {
+    const { name, email, phone, subject, message } = body;
+    if (!name || !email || !phone || !subject || !message) {
       return NextResponse.json(
-        { error: "name, email, subject, and message are required" },
+        { error: "name, email, phone, subject, and message are required" },
         { status: 400 }
       );
     }
 
-    // Basic email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!isFullNameNoSpecial(String(name))) {
       return NextResponse.json(
-        { error: "Invalid email format" },
+        { error: "Full name may only contain letters and spaces" },
+        { status: 400 }
+      );
+    }
+    if (!isValidEmail(String(email))) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+    if (!isTenDigitPhone(String(phone))) {
+      return NextResponse.json(
+        { error: "Phone must be exactly 10 digits" },
+        { status: 400 }
+      );
+    }
+    if (!isSubjectLine(String(subject))) {
+      return NextResponse.json(
+        { error: "Subject contains invalid characters or is too short" },
+        { status: 400 }
+      );
+    }
+    if (!isMessageBody(String(message))) {
+      return NextResponse.json(
+        { error: "Message must be at least 10 characters" },
         { status: 400 }
       );
     }
@@ -55,6 +81,7 @@ export async function POST(req: NextRequest) {
     const inquiry = await Inquiry.create({
       name: name.trim(),
       email: email.trim().toLowerCase(),
+      phone: String(phone).replace(/\D/g, "").slice(0, 10),
       subject: subject.trim(),
       message: message.trim(),
     });
