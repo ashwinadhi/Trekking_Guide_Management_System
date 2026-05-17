@@ -14,7 +14,7 @@ export default function EmergencyPage() {
 
   const emergencyContacts = [
     {
-      name: "Ashwin Shrestha (Your Guide)",
+      name: "Head Guide (Your Guide)",
       phone: "+977-9841234567",
       whatsapp: "+977-9841234567",
       available: "24/7 during trek",
@@ -77,7 +77,7 @@ export default function EmergencyPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
+                Technie Trek
               </Link>
             </div>
             <div className="hidden md:block">
@@ -311,7 +311,7 @@ export default function EmergencyPage() {
                   <strong>Trek:</strong> Everest Base Camp
                 </p>
                 <p>
-                  <strong>Guide:</strong> Ashwin Shrestha
+                  <strong>Guide:</strong> Head Guide
                 </p>
                 <p>
                   <strong>Start Date:</strong> March 15, 2024

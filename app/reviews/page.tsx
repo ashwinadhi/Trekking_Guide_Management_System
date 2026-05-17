@@ -41,6 +41,7 @@ export default function ReviewsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
+    userName: "",
     description: "",
     rating: 5,
     slug: "general",
@@ -61,6 +62,14 @@ export default function ReviewsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.userName.trim()) {
+      toast({
+        title: "Action Required",
+        description: "Please enter your name.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!isReviewDescription(formData.description)) {
       toast({
         title: "Check your review",
@@ -79,10 +88,10 @@ export default function ReviewsPage() {
 
       if (res.ok) {
         toast({ 
-          title: "Success", 
-          description: "Thank you for your feedback, Ashwin and the team appreciate it!" 
+          title: "Review Submitted! 🎉", 
+          description: "Thank you! Your review has been submitted for moderation and will appear in the UI once approved by our team." 
         });
-        setFormData({ description: "", rating: 5, slug: "general" });
+        setFormData({ userName: "", description: "", rating: 5, slug: "general" });
         setShowForm(false);
         fetchReviews();
       } else {
@@ -101,7 +110,7 @@ export default function ReviewsPage() {
       _id: "static-1",
       userName: "Sarah Johnson",
       userImage: "/images/mountain-sunrise.jpg",
-      description: "Ashwin was absolutely incredible! His knowledge of the mountains, local culture, and safety protocols made our Everest Base Camp trek unforgettable. He was always checking on our wellbeing, sharing fascinating stories about Sherpa culture, and ensuring we were properly acclimatized. His English is excellent, and he has such a warm, friendly personality. I felt completely safe under his guidance. Highly recommend!",
+      description: "Our guide was absolutely incredible! His knowledge of the mountains, local culture, and safety protocols made our Everest Base Camp trek unforgettable. He was always checking on our wellbeing, sharing fascinating stories about Sherpa culture, and ensuring we were properly acclimatized. His English is excellent, and he has such a warm, friendly personality. I felt completely safe under his guidance. Highly recommend!",
       rating: 5,
       slug: "everest-base-camp-trek",
       createdAt: "2023-10-01T00:00:00.000Z",
@@ -110,7 +119,7 @@ export default function ReviewsPage() {
       _id: "static-2",
       userName: "Marco Rossi",
       userImage: "/images/prayer-flags.jpg",
-      description: "Best trekking experience of my life! Ashwin's passion for the mountains is contagious. He knew every trail, every village, and had connections everywhere we went. The local people clearly respect and trust him. He helped us when one of our group members got altitude sickness, arranging immediate descent and medical care. His care for trekkers goes beyond just guiding - he truly cares about your experience and safety.",
+      description: "Best trekking experience of my life! Our guide's passion for the mountains is contagious. He knew every trail, every village, and had connections everywhere we went. The local people clearly respect and trust him. He helped us when one of our group members got altitude sickness, arranging immediate descent and medical care. His care for trekkers goes beyond just guiding - he truly cares about your experience and safety.",
       rating: 5,
       slug: "annapurna-circuit-trek",
       createdAt: "2023-09-15T00:00:00.000Z",
@@ -119,7 +128,7 @@ export default function ReviewsPage() {
       _id: "static-3",
       userName: "Emma Thompson",
       userImage: "/images/sherpa-village.jpg",
-      description: "Ashwin made our Langtang Valley trek absolutely perfect. As a solo female traveler, I felt completely safe and comfortable. He's incredibly knowledgeable about flora and fauna, pointing out different plants and birds along the way. His photography tips helped me capture amazing shots! The way he interacts with local communities shows his deep respect for the culture. Already planning my next trek with him!",
+      description: "Our guide made our Langtang Valley trek absolutely perfect. As a solo female traveler, I felt completely safe and comfortable. He's incredibly knowledgeable about flora and fauna, pointing out different plants and birds along the way. His photography tips helped me capture amazing shots! The way he interacts with local communities shows his deep respect for the culture. Already planning my next trek with him!",
       rating: 5,
       slug: "langtang-valley-trek",
       createdAt: "2023-11-20T00:00:00.000Z",
@@ -140,7 +149,7 @@ export default function ReviewsPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
+                Technie Trek
               </Link>
             </div>
             <div className="hidden md:block">
@@ -196,97 +205,97 @@ export default function ReviewsPage() {
       {/* Review Submission Area */}
       <section className="py-12 bg-white">
         <div className="max-w-3xl mx-auto px-4">
-          {!session ? (
-            <div className="p-8 rounded-2xl bg-gray-50 border border-gray-200 text-center">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Share Your Adventure</h3>
-              <p className="text-gray-600 mb-6">Join our community and help others discover the magic of the Himalayas.</p>
+          <div className="space-y-6">
+            {!showForm ? (
               <Button 
-                onClick={() => signIn("google")}
-                className="bg-green-700 hover:bg-green-800 text-white rounded-xl px-8"
+                onClick={() => setShowForm(true)}
+                className="w-full h-14 rounded-xl bg-green-700 hover:bg-green-800 text-white font-bold flex items-center justify-center gap-2"
               >
-                Sign in with Google to Review
+                <Plus size={20} /> Write Your Review
               </Button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {!showForm ? (
-                <Button 
-                  onClick={() => setShowForm(true)}
-                  className="w-full h-14 rounded-xl bg-green-700 hover:bg-green-800 text-white font-bold flex items-center justify-center gap-2"
-                >
-                  <Plus size={20} /> Write Your Review
-                </Button>
-              ) : (
-                <Card className="border-green-200 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
-                  <CardContent className="p-8">
-                    <div className="flex justify-between items-center mb-6">
-                      <div className="flex items-center gap-4">
-                        <img src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`} alt="" className="w-12 h-12 rounded-full border-2 border-green-500" />
-                        <div>
-                          <h4 className="text-gray-900 font-bold">{session.user?.name}</h4>
-                          <p className="text-xs text-gray-500">Submit your feedback</p>
-                        </div>
+            ) : (
+              <Card className="border-green-200 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
+                <CardContent className="p-8">
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-4">
+                      <img src={formData.userName ? `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.userName.trim())}&background=random` : "https://ui-avatars.com/api/?name=User&background=random"} alt="" className="w-12 h-12 rounded-full border-2 border-green-500" />
+                      <div>
+                        <h4 className="text-gray-900 font-bold">{formData.userName || "Your Name"}</h4>
+                        <p className="text-xs text-gray-500">Submit your feedback</p>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="rounded-full">
-                        <X size={20} />
-                      </Button>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="rounded-full">
+                      <X size={20} />
+                    </Button>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Your Name *</Label>
+                      <input
+                        required
+                        type="text"
+                        value={formData.userName}
+                        onChange={(e) => setFormData({...formData, userName: e.target.value})}
+                        placeholder="Enter your name..."
+                        className="w-full bg-white border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-green-500/50 text-gray-900"
+                        maxLength={100}
+                      />
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold">Which adventure are you reviewing?</Label>
-                        <select 
-                          value={formData.slug}
-                          onChange={(e) => setFormData({...formData, slug: e.target.value})}
-                          className="w-full bg-white border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-green-500/50"
-                        >
-                          <option value="general">General Experience</option>
-                          {treks.map(t => <option key={t._id} value={t.slug}>{t.title}</option>)}
-                        </select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold">Your Rating</Label>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, rating: star })}
-                              className={`p-1 transition-all ${formData.rating >= star ? "text-yellow-400" : "text-gray-300"}`}
-                            >
-                              <Star className="h-8 w-8 fill-current" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm font-semibold">Your Experience</Label>
-                        <Textarea 
-                          required
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          placeholder="Tell us about your journey..."
-                          className="rounded-xl min-h-[120px] focus:ring-green-500"
-                          minLength={20}
-                          maxLength={4000}
-                        />
-                      </div>
-
-                      <Button 
-                        type="submit" 
-                        disabled={submitting}
-                        className="w-full h-12 bg-green-700 hover:bg-green-800 text-white rounded-xl font-bold"
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Which adventure are you reviewing?</Label>
+                      <select 
+                        value={formData.slug}
+                        onChange={(e) => setFormData({...formData, slug: e.target.value})}
+                        className="w-full bg-white border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-green-500/50 text-gray-900"
                       >
-                        {submitting ? <Loader2 className="animate-spin" /> : <span className="flex items-center gap-2">Submit Review <Send size={18} /></span>}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
+                        <option value="general">General Experience</option>
+                        {treks.map(t => <option key={t._id} value={t.slug}>{t.title}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Your Rating</Label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, rating: star })}
+                            className={`p-1 transition-all ${formData.rating >= star ? "text-yellow-400" : "text-gray-300"}`}
+                          >
+                            <Star className="h-8 w-8 fill-current" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Your Experience</Label>
+                      <Textarea 
+                        required
+                        value={formData.description}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                        placeholder="Tell us about your journey..."
+                        className="rounded-xl min-h-[120px] focus:ring-green-500 text-gray-900"
+                        minLength={20}
+                        maxLength={4000}
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      disabled={submitting}
+                      className="w-full h-12 bg-green-700 hover:bg-green-800 text-white rounded-xl font-bold"
+                    >
+                      {submitting ? <Loader2 className="animate-spin" /> : <span className="flex items-center gap-2">Submit Review <Send size={18} /></span>}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </section>
 

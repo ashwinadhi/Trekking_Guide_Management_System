@@ -7,9 +7,9 @@ import { MapPin, CheckCircle, Wifi, Coffee, Loader2, Calendar as CalendarIcon, I
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { HotelBookingModal } from "@/components/hotel-booking-modal";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
@@ -55,12 +55,7 @@ export default function HotelDetailPage() {
   const [loading, setLoading] = useState(true);
   
   const [selectedRoom, setSelectedRoom] = useState<"Standard" | "Deluxe">("Standard");
-  const [guestName, setGuestName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchHotel() {
@@ -75,56 +70,6 @@ export default function HotelDetailPage() {
     }
     if (params.id) fetchHotel();
   }, [params.id]);
-
-  const handleBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dateRange.from || !dateRange.to || !guestName || !guestEmail || !guestPhone) {
-      toast({ title: "Please fill all fields and select dates", variant: "destructive" });
-      return;
-    }
-    if (!isFullNameNoSpecial(guestName)) {
-      toast({ title: "Invalid name", description: "Use letters and spaces only.", variant: "destructive" });
-      return;
-    }
-    if (!isValidEmail(guestEmail)) {
-      toast({ title: "Invalid email", variant: "destructive" });
-      return;
-    }
-    if (!isTenDigitPhone(guestPhone)) {
-      toast({ title: "Invalid phone", description: "Enter exactly 10 digits.", variant: "destructive" });
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/hotel-bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hotelId: hotel?._id,
-          roomType: selectedRoom,
-          checkIn: format(dateRange.from, 'yyyy-MM-dd'),
-          checkOut: format(dateRange.to, 'yyyy-MM-dd'),
-          guestName,
-          guestEmail,
-          guestPhone
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      toast({ title: "Booking request sent!", description: "We will confirm your stay shortly." });
-      setDateRange({});
-      setGuestName("");
-      setGuestEmail("");
-      setGuestPhone("");
-    } catch (error: any) {
-      toast({ title: "Booking Failed", description: error.message, variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-emerald-600 h-10 w-10" /></div>;
   if (!hotel) return <div className="min-h-screen flex items-center justify-center">Hotel not found.</div>;
@@ -259,88 +204,25 @@ export default function HotelDetailPage() {
               <p className="text-sm font-semibold text-gray-700 mt-2">{selectedRoom} Room Selected</p>
             </div>
 
-            <form onSubmit={handleBooking} className="space-y-4">
-              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4">
-                 <label className="text-sm font-bold text-gray-800 mb-2 block flex items-center gap-2">
-                   <CalendarIcon className="h-4 w-4 text-emerald-600" /> Select Dates
-                 </label>
-                 <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={(range) => {
-                       // Reset if a sold-out date is in range (though disabled dates shouldn't be selectable, doing a range might span across them)
-                       if (range?.from && range?.to) {
-                         let current = new Date(range.from);
-                         let hasSoldOut = false;
-                         while (current <= range.to) {
-                           if (isDateDisabled(current)) hasSoldOut = true;
-                           current.setDate(current.getDate() + 1);
-                         }
-                         if (hasSoldOut) {
-                           toast({ title: "Range includes sold out dates", variant: "destructive" });
-                           setDateRange({ from: range.from });
-                           return;
-                         }
-                       }
-                       setDateRange(range as any);
-                    }}
-                    disabled={isDateDisabled}
-                    modifiers={{ soldOut: disabledDates }}
-                    modifiersClassNames={{ soldOut: "bg-red-500/10 text-red-600 font-bold line-through" }}
-                    className="rounded-md border bg-white"
-                 />
-                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                   <div className="w-3 h-3 bg-red-500/20 rounded-full border border-red-500/50" /> = Sold Out
-                 </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Full Name *</label>
-                <Input
-                  required
-                  value={guestName}
-                  onChange={(e) => setGuestName(sanitizeFullNameInput(e.target.value))}
-                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
-                  placeholder="John Doe"
-                  maxLength={100}
-                />
-                <p className="text-xs text-gray-500 mt-1">Letters and spaces only.</p>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Email *</label>
-                <Input
-                  type="email"
-                  required
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value.trimStart())}
-                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
-                  placeholder="john@example.com"
-                  maxLength={254}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Phone * (10 digits)</label>
-                <Input
-                  required
-                  value={guestPhone}
-                  onChange={(e) => setGuestPhone(normalizePhoneDigits(e.target.value))}
-                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
-                  placeholder="9800000000"
-                  maxLength={10}
-                  inputMode="numeric"
-                />
-              </div>
-
-              <Button type="submit" disabled={submitting} className="w-full h-14 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-emerald-600/20">
-                {submitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "Book Now"}
-              </Button>
-            </form>
+            <Button onClick={() => setIsModalOpen(true)} className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-emerald-600/20">
+              Book this Room
+            </Button>
+            
             <p className="text-center text-sm text-gray-500 mt-4">You won't be charged yet</p>
           </div>
         </div>
       </section>
 
       <Footer />
+
+      {hotel && (
+        <HotelBookingModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          hotel={hotel}
+          selectedRoomType={selectedRoom}
+        />
+      )}
     </div>
   );
 }

@@ -85,7 +85,7 @@ export default function ContactPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
+                Technie Trek
               </Link>
             </div>
             <div className="hidden md:block">
@@ -153,10 +153,10 @@ export default function ContactPage() {
               <Button 
                 variant="outline" 
                 className="w-full bg-transparent border-blue-200 hover:bg-blue-50"
-                onClick={() => window.location.href = "mailto:ashwin@technietrek.com"}
+                onClick={() => window.location.href = "mailto:info@technietrek.com"}
               >
                 <Mail className="mr-2 h-4 w-4" />
-                ashwin@technietrek.com
+                info@technietrek.com
               </Button>
             </Card>
 

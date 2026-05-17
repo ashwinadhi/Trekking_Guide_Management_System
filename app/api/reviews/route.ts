@@ -10,8 +10,23 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
+    const moderation = searchParams.get("moderation") === "true";
     
-    const query = slug && slug !== "all" ? { slug } : {};
+    // Check if the user is an admin
+    const session = await getServerSession(authOptions);
+    const isAdmin = session && (session.user as any)?.role === "admin";
+
+    // Build the query
+    const query: any = {};
+    if (slug && slug !== "all") {
+      query.slug = slug;
+    }
+    
+    // Only return unapproved reviews if requested by an admin in moderation mode
+    if (!isAdmin || !moderation) {
+      query.isApproved = true;
+    }
+
     const reviews = await Review.find(query).sort({ createdAt: -1 });
     return NextResponse.json(reviews);
   } catch (error: any) {
@@ -21,16 +36,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Please sign in to leave a review" }, { status: 401 });
-    }
-
     await connectDB();
     const body = await req.json();
-    const { description, rating, slug } = body;
+    const { userName, description, rating, slug } = body;
 
-    if (!description || !rating || !slug) {
+    if (!userName || !description || !rating || !slug) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -42,11 +52,12 @@ export async function POST(req: NextRequest) {
     }
 
     const review = await Review.create({
-      userName: session.user?.name,
-      userImage: session.user?.image || "https://ui-avatars.com/api/?name=" + session.user?.name,
+      userName: String(userName).trim(),
+      userImage: `https://ui-avatars.com/api/?name=${encodeURIComponent(String(userName).trim())}&background=random`,
       description,
       rating: Number(rating),
-      slug
+      slug,
+      isApproved: false // Always false initially, must be verified by admin
     });
 
     return NextResponse.json(review, { status: 201 });

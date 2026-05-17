@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Star, Trash2, Loader2, MessageSquare, User, Tag } from "lucide-react";
+import { Star, Trash2, Loader2, MessageSquare, User, Tag, Calendar, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ interface Review {
   description: string;
   rating: number;
   slug: string;
+  isApproved: boolean;
   createdAt: string;
 }
 
@@ -25,13 +26,31 @@ export default function AdminReviewsPage() {
 
   const fetchReviews = useCallback(async () => {
     try {
-      const res = await fetch("/api/reviews");
+      const res = await fetch("/api/reviews?moderation=true");
       if (res.ok) setReviews(await res.json());
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  const handleApprove = async (id: string) => {
+    try {
+      const res = await fetch(`/api/reviews/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isApproved: true }),
+      });
+      if (res.ok) {
+        toast({ title: "Approved! 🎉", description: "Review has been approved and is now live on the website." });
+        fetchReviews();
+      } else {
+        throw new Error("Failed to approve review");
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this review?")) return;
@@ -92,7 +111,7 @@ export default function AdminReviewsPage() {
                   </div>
                 </div>
 
-                {/* Content */}
+                 {/* Content */}
                 <div className="flex-grow space-y-4">
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="secondary" className="bg-gray-800 text-gray-300 flex items-center gap-1">
@@ -100,6 +119,9 @@ export default function AdminReviewsPage() {
                     </Badge>
                     <Badge variant="secondary" className="bg-gray-800 text-gray-300 flex items-center gap-1">
                       <Calendar size={12} /> {new Date(review.createdAt).toLocaleDateString()}
+                    </Badge>
+                    <Badge variant="secondary" className={`flex items-center gap-1 border-none ${review.isApproved ? "bg-emerald-950 text-emerald-400 border border-emerald-900" : "bg-amber-950/60 text-amber-400 border border-amber-900"}`}>
+                      {review.isApproved ? "Approved & Live" : "Pending Approval"}
                     </Badge>
                   </div>
                   
@@ -111,7 +133,16 @@ export default function AdminReviewsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex md:flex-col justify-end gap-2">
+                <div className="flex md:flex-col justify-end gap-2 items-end md:items-stretch">
+                  {!review.isApproved && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleApprove(review._id)}
+                      className="rounded-xl h-10 px-3 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-colors flex items-center gap-1 font-semibold text-xs"
+                    >
+                      <Check size={16} /> Approve
+                    </Button>
+                  )}
                   <Button 
                     variant="destructive" 
                     size="icon" 

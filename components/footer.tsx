@@ -10,7 +10,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <Mountain className="h-8 w-8 text-green-400" />
-              <span className="text-xl font-bold">Technie Trek Ashwin</span>
+              <span className="text-xl font-bold">Technie Trek</span>
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
               Your trusted partner for unforgettable trekking adventures in Nepal. Experience the beauty of the
@@ -82,8 +82,8 @@ export default function Footer() {
               </li>
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-green-400" />
-                <a href="mailto:ashwin@technietrek.com" className="text-gray-300 hover:text-green-400 transition-colors">
-                  ashwin@technietrek.com
+                <a href="mailto:info@technietrek.com" className="text-gray-300 hover:text-green-400 transition-colors">
+                  info@technietrek.com
                 </a>
               </li>
               <li className="flex items-start space-x-2">
@@ -103,7 +103,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-300">
-            © {new Date().getFullYear()} Technie Trek Ashwin. All rights reserved. | Designed for adventure enthusiasts.
+            © {new Date().getFullYear()} Technie Trek. All rights reserved. | Designed for adventure enthusiasts.
           </p>
         </div>
       </div>

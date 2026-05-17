@@ -13,13 +13,13 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function ChatPage() {
   const { toast } = useToast()
-  const [selectedChat, setSelectedChat] = useState("ashwin-guide")
+  const [selectedChat, setSelectedChat] = useState("head-guide")
   const [message, setMessage] = useState("")
 
   const conversations = [
     {
-      id: "ashwin-guide",
-      name: "Ashwin Shrestha",
+      id: "head-guide",
+      name: "Head Guide",
       role: "Trek Guide",
       avatar: "/images/mountain-sunrise.jpg",
       lastMessage: "Perfect! I'll prepare the detailed itinerary for your Everest Base Camp trek.",
@@ -55,7 +55,7 @@ export default function ChatPage() {
   const messages = [
     {
       id: 1,
-      sender: "ashwin-guide",
+      sender: "head-guide",
       content:
         "Hello! Thank you for booking the Everest Base Camp trek with me. I'm excited to guide you on this incredible journey!",
       timestamp: "10:30 AM",
@@ -64,13 +64,13 @@ export default function ChatPage() {
     {
       id: 2,
       sender: "user",
-      content: "Hi Ashwin! I'm really looking forward to it. I have a few questions about the preparation.",
+      content: "Hi! I'm really looking forward to it. I have a few questions about the preparation.",
       timestamp: "10:32 AM",
       type: "text",
     },
     {
       id: 3,
-      sender: "ashwin-guide",
+      sender: "head-guide",
       content: "Of course! I'm here to help. What would you like to know?",
       timestamp: "10:33 AM",
       type: "text",
@@ -84,7 +84,7 @@ export default function ChatPage() {
     },
     {
       id: 5,
-      sender: "ashwin-guide",
+      sender: "head-guide",
       content:
         "March is actually a great time! Days are usually clear with temperatures around 10-15°C at lower elevations. It gets much colder at higher altitudes though.",
       timestamp: "10:37 AM",
@@ -92,7 +92,7 @@ export default function ChatPage() {
     },
     {
       id: 6,
-      sender: "ashwin-guide",
+      sender: "head-guide",
       content: "Here's a photo from last March at Everest Base Camp - you can see the conditions are excellent!",
       timestamp: "10:38 AM",
       type: "image",
@@ -100,7 +100,7 @@ export default function ChatPage() {
     },
     {
       id: 7,
-      sender: "ashwin-guide",
+      sender: "head-guide",
       content:
         "For equipment, I recommend renting a good down jacket and sleeping bag if you don't have them. I can arrange this for you through our equipment rental service.",
       timestamp: "10:40 AM",
@@ -115,7 +115,7 @@ export default function ChatPage() {
     },
     {
       id: 9,
-      sender: "ashwin-guide",
+      sender: "head-guide",
       content: "Perfect! I'll prepare the detailed itinerary for your Everest Base Camp trek.",
       timestamp: "10:45 AM",
       type: "text",
@@ -150,7 +150,7 @@ export default function ChatPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
+                Technie Trek
               </Link>
             </div>
             <div className="hidden md:block">

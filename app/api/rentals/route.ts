@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     const itemSummary =
       formattedItems.length > 0
         ? formattedItems
-            .map((i) => `${i.quantity}× ${i.name}`)
+            .map((i: any) => `${i.quantity}× ${i.name}`)
             .join(" · ")
         : "—";
     queueRentalEquipmentConfirmation({

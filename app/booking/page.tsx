@@ -159,9 +159,9 @@ function BookingContent() {
     if (isSubmitting) return;
     if (!personalDetailsValid) {
       toast({
-        title: "Check your details",
+        title: "Action Required",
         description:
-          "Use letters only for full name and country, a valid email, and a 10-digit phone number.",
+          "Please ensure your personal details are formatted correctly before submitting.",
         variant: "destructive",
       });
       return;
@@ -208,8 +208,8 @@ function BookingContent() {
       }
 
       toast({
-        title: "Booking Request Submitted! 🎉",
-        description: "Your request is pending approval. We will contact you shortly.",
+        title: "Booking Confirmed! 🎉",
+        description: "Thank you for choosing Technie Trek. Your request has been successfully submitted and our team will contact you shortly.",
         duration: 5000,
       });
       // Optionally reset form or redirect here
@@ -217,8 +217,8 @@ function BookingContent() {
       setFurthestStepReached(1);
     } catch (error: any) {
       toast({
-        title: "Submission Failed",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Booking Unavailable",
+        description: error.message || "We couldn't process your request at this time. Please try again later.",
         variant: "destructive",
       });
     } finally {

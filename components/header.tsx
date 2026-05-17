@@ -17,7 +17,7 @@ export default function Header() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-green-700">
               <Mountain className="h-8 w-8" />
-              Nepal Guide Connect
+              Technie Trek
             </Link>
           </div>
 
@@ -71,6 +71,11 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/car-booking" className="w-full cursor-pointer">
                       Car Rental
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/guide-booking" className="w-full cursor-pointer">
+                      Book Guide
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -167,6 +172,13 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Car Rental
+                  </Link>
+                  <Link
+                    href="/guide-booking"
+                    className="text-gray-600 hover:text-green-700 block px-3 py-2 text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Book Guide
                   </Link>
                 </div>
               )}

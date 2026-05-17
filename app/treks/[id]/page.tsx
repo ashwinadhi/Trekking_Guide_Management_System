@@ -229,10 +229,10 @@ export default function TrekDetailPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-6 sticky top-24 h-fit pb-12">
             
             {/* Booking Card */}
-            <Card className="sticky top-6 h-fit shadow-lg border-0 rounded-2xl overflow-hidden">
+            <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
               <div className="bg-gradient-to-br from-emerald-700 to-teal-700 px-6 py-8 text-center">
                 <div className="text-4xl font-bold text-white mb-1">${trek.price.toLocaleString()}</div>
                 <div className="text-emerald-200 text-sm">per person</div>

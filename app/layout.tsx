@@ -11,7 +11,7 @@ import { Providers } from "@/components/Providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Technie Trek Ashwin - Nepal Trekking Guide & Adventure Services",
+  title: "Technie Trek - Nepal Trekking Guide & Adventure Services",
   description:
     "Professional trekking guide services in Nepal. Explore Everest, Annapurna, and other Himalayan peaks with experienced local guides.",
     generator: 'v0.app'

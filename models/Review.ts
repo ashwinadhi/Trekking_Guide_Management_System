@@ -6,6 +6,7 @@ export interface IReview extends Document {
   description: string;
   rating: number;
   slug: string;
+  isApproved: boolean;
   createdAt: Date;
 }
 
@@ -15,6 +16,11 @@ const ReviewSchema: Schema = new Schema({
   description: { type: String, required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
   slug: { type: String, required: true }, // trek slug or 'general'
+  isApproved: { type: Boolean, default: false },
 }, { timestamps: true });
+
+if (process.env.NODE_ENV === "development") {
+  delete mongoose.models.Review;
+}
 
 export const Review: Model<IReview> = mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);
