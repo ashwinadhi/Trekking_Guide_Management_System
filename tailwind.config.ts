@@ -12,7 +12,15 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-outfit)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-cormorant)', 'ui-serif', 'Georgia', 'serif'],
+      },
       colors: {
+        gold: 'hsl(var(--gold))',
+        ink: 'hsl(var(--ink))',
+        ivory: 'hsl(var(--ivory))',
+        stone: 'hsl(var(--stone))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

@@ -4,15 +4,22 @@ import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { HotelBooking } from "@/models/HotelBooking";
 import { Hotel } from "@/models/Hotel";
+import "@/models/Destination";
 import { isFullNameNoSpecial, isValidEmail, isTenDigitPhone } from "@/lib/form-validation";
+import {
+  rentalDaysBetween,
+  dateRangeIncludesBlocked,
+  isWithinDedupWindow,
+} from "@/lib/booking-pricing";
 import { queueHotelBookingConfirmation } from "@/lib/booking-confirmation-email";
+import { queueAdminBookingAlert } from "@/lib/site-notifications";
 
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
     const body = await req.json();
 
-    const { hotelId, roomType, checkIn, checkOut, guestName, guestEmail, guestPhone, totalPrice } = body;
+    const { hotelId, roomType, checkIn, checkOut, guestName, guestEmail, guestPhone } = body;
 
     if (!hotelId || !roomType || !checkIn || !checkOut || !guestName || !guestEmail || !guestPhone) {
       return NextResponse.json(
@@ -42,30 +49,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid room type" }, { status: 400 });
     }
 
-    // Basic Sold Out Check (Hardcoded dates)
-    const checkInDate = new Date(checkIn).getTime();
-    const checkOutDate = new Date(checkOut).getTime();
-
     if (room.soldOutDates && Array.isArray(room.soldOutDates)) {
-      for (const dateStr of room.soldOutDates) {
-        const soldOutTime = new Date(dateStr).getTime();
-        if (soldOutTime >= checkInDate && soldOutTime < checkOutDate) {
-          return NextResponse.json(
-            { error: "Selected dates include a sold-out date." },
-            { status: 400 }
-          );
-        }
+      if (dateRangeIncludesBlocked(checkIn, checkOut, room.soldOutDates)) {
+        return NextResponse.json(
+          { error: "Selected dates include a sold-out date." },
+          { status: 400 }
+        );
       }
     }
 
-    // Check how many bookings overlap with the requested dates for this room type
+    let nights: number;
+    try {
+      nights = rentalDaysBetween(checkIn, checkOut);
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
+
+    // Pending + confirmed bookings both reserve inventory
     const overlappingBookings = await HotelBooking.find({
       hotelId,
       roomType,
-      status: 'confirmed', // Only confirmed bookings reduce availability
-      $or: [
-        { checkIn: { $lt: checkOut }, checkOut: { $gt: checkIn } }
-      ]
+      status: { $in: ["pending", "confirmed"] },
+      $or: [{ checkIn: { $lt: checkOut }, checkOut: { $gt: checkIn } }],
     });
 
     if (overlappingBookings.length >= room.totalRooms) {
@@ -75,9 +80,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculate total price if not passed explicitly
-    const nights = Math.max(1, Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24)));
-    const calculatedPrice = totalPrice || (room.price * nights);
+    const recentDuplicate = await HotelBooking.findOne({
+      hotelId,
+      guestEmail: String(guestEmail).trim().toLowerCase(),
+      checkIn,
+      checkOut,
+      roomType,
+      status: { $ne: "cancelled" },
+    }).sort({ createdAt: -1 });
+
+    if (recentDuplicate && isWithinDedupWindow(recentDuplicate.createdAt)) {
+      return NextResponse.json(
+        { error: "A similar booking was just submitted. Please wait before trying again." },
+        { status: 409 }
+      );
+    }
+
+    const calculatedPrice = room.price * nights;
 
     // Save the booking as pending
     const booking = await HotelBooking.create({
@@ -100,6 +119,20 @@ export async function POST(req: NextRequest) {
       checkIn: String(checkIn),
       checkOut: String(checkOut),
       totalPrice: calculatedPrice,
+    });
+
+    queueAdminBookingAlert({
+      type: "Hotel booking",
+      customerName: booking.guestName,
+      customerEmail: booking.guestEmail,
+      customerPhone: booking.guestPhone,
+      totalPrice: calculatedPrice,
+      summary: [
+        { label: "Hotel", value: hotel.name },
+        { label: "Room", value: String(roomType) },
+        { label: "Check-in", value: String(checkIn) },
+        { label: "Check-out", value: String(checkOut) },
+      ],
     });
 
     return NextResponse.json(booking, { status: 201 });

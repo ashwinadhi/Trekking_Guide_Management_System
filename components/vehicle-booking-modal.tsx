@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { X, Calendar, MapPin, Loader2, Car, User, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { BookingSuccessDialog } from "@/components/booking-success-dialog"
 import {
   isValidEmail,
   isTenDigitPhone,
@@ -36,6 +37,7 @@ interface VehicleBookingModalProps {
 export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBookingModalProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -134,7 +136,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
       })
 
       if (res.ok) {
-        toast({ title: "Booking Confirmed!", description: "Your vehicle request has been sent to our logistics team." })
+        setShowSuccessDialog(true)
         onClose()
       } else {
         const err = await res.json()
@@ -147,13 +149,21 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !showSuccessDialog) return null
 
   const totalAmount = calculateTotal();
 
   return (
+    <>
+    <BookingSuccessDialog
+      open={showSuccessDialog}
+      onOpenChange={setShowSuccessDialog}
+      title="Booking Confirmed!"
+      description="Your vehicle request has been sent to our logistics team."
+    />
+    {isOpen && (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-      <div className="bg-gray-950 border border-gray-800 rounded-[2.5rem] max-w-3xl w-full max-h-[95vh] overflow-y-auto shadow-[0_0_50px_-12px_rgba(16,185,129,0.25)] relative">
+      <div className="bg-card border border-gold/25 max-w-3xl w-full max-h-[95vh] overflow-y-auto relative">
         
         {/* Close Button */}
         <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-gray-900 border border-gray-800 text-gray-500 hover:text-white rounded-2xl transition-all z-10">
@@ -162,14 +172,14 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
 
         <div className="flex flex-col md:flex-row">
           {/* Left Side: Vehicle Summary */}
-          <div className="md:w-72 bg-emerald-500/5 border-r border-gray-800 p-8 space-y-6">
+          <div className="md:w-72 bg-gold/5 border-r border-gold/20 p-8 space-y-6">
             <div className="space-y-4">
-              <div className="aspect-square rounded-3xl overflow-hidden border border-emerald-500/20">
+              <div className="aspect-square overflow-hidden border border-gold/20">
                 <img src={vehicle.image} alt={vehicle.name} className="w-full h-full object-cover" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">{vehicle.name}</h3>
-                <p className="text-xs text-emerald-500 font-black uppercase tracking-widest">{vehicle.type}</p>
+                <p className="luxury-label">{vehicle.type}</p>
               </div>
             </div>
 
@@ -193,7 +203,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
             {totalAmount > 0 && (
               <div className="pt-8 border-t border-gray-800">
                 <p className="text-xs text-gray-500 uppercase font-black tracking-widest mb-1">Estimated Total</p>
-                <p className="text-4xl font-black text-emerald-500">${totalAmount}</p>
+                <p className="font-display text-4xl text-gold">${totalAmount}</p>
               </div>
             )}
           </div>
@@ -221,13 +231,13 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Pickup Location</Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                     <select 
                       name="pickupLocation" 
                       value={formData.pickupLocation} 
                       onChange={handleInputChange} 
                       required 
-                      className="w-full bg-gray-900 border border-gray-800 rounded-2xl h-12 pl-10 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
+                      className="w-full bg-secondary border border-gold/20 h-12 pl-10 text-ivory outline-none focus:ring-2 focus:ring-gold/50 appearance-none"
                     >
                       <option value="">Select Pickup</option>
                       {vehicle.pickupLocation?.split(",").map((loc, i) => (
@@ -239,13 +249,13 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Drop-off Location</Label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                     <select 
                       name="dropOffLocation" 
                       value={formData.dropOffLocation} 
                       onChange={handleInputChange} 
                       required 
-                      className="w-full bg-gray-900 border border-gray-800 rounded-2xl h-12 pl-10 text-white outline-none focus:ring-2 focus:ring-emerald-500/50 appearance-none"
+                      className="w-full bg-secondary border border-gold/20 h-12 pl-10 text-ivory outline-none focus:ring-2 focus:ring-gold/50 appearance-none"
                     >
                       <option value="">Select Drop-off</option>
                       {vehicle.dropOffLocation?.split(",").map((loc, i) => (
@@ -259,7 +269,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">Start Date</Label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                     <Input 
                       name="startDate" 
                       type="date" 
@@ -273,7 +283,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-black text-gray-500 tracking-widest">End Date</Label>
                   <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                     <Input 
                       name="endDate" 
                       type="date" 
@@ -290,7 +300,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
                 <Button 
                   type="submit" 
                   disabled={isSubmitting || !vehicleFormValid} 
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-14 font-black uppercase tracking-widest shadow-xl shadow-emerald-900/20"
+                  className="w-full h-14 uppercase tracking-[0.2em]"
                 >
                   {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> : (
                     <span className="flex items-center gap-2">Confirm Booking <CheckCircle2 size={18} /></span>
@@ -302,5 +312,7 @@ export function VehicleBookingModal({ isOpen, onClose, vehicle }: VehicleBooking
         </div>
       </div>
     </div>
+    )}
+    </>
   )
 }

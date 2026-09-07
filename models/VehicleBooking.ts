@@ -12,6 +12,8 @@ export interface IVehicleBooking extends Document {
   endDate: string;
   totalPrice: number;
   status: 'pending' | 'confirmed' | 'cancelled';
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const VehicleBookingSchema: Schema = new Schema({

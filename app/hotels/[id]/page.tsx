@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
+import { BookingSuccessDialog } from "@/components/booking-success-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
 import {
@@ -61,6 +62,7 @@ export default function HotelDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
     async function fetchHotel() {
@@ -114,7 +116,7 @@ export default function HotelDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast({ title: "Booking request sent!", description: "We will confirm your stay shortly." });
+      setShowSuccessDialog(true);
       setDateRange({});
       setGuestName("");
       setGuestEmail("");
@@ -126,7 +128,7 @@ export default function HotelDetailPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-emerald-600 h-10 w-10" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-gold h-10 w-10" /></div>;
   if (!hotel) return <div className="min-h-screen flex items-center justify-center">Hotel not found.</div>;
 
   const room = hotel.rooms.find(r => r.type === selectedRoom) || hotel.rooms[0];
@@ -142,7 +144,7 @@ export default function HotelDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       {/* Hero Section */}
@@ -150,12 +152,12 @@ export default function HotelDetailPage() {
         <Image src={hotel.images[0] || "/placeholder.svg"} alt={hotel.name} fill className="object-cover" priority />
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16 max-w-7xl mx-auto text-white">
-          <Badge className="bg-emerald-600 hover:bg-emerald-700 mb-4 py-1.5 px-3">
+          <Badge className="bg-primary hover:bg-gold/90 mb-4 py-1.5 px-3">
             Part of {hotel.destinationId?.title || "Nepal"}
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-4">{hotel.name}</h1>
           <p className="flex items-center gap-2 text-lg text-gray-200">
-            <MapPin className="h-5 w-5 text-emerald-400" /> {hotel.destinationId?.title}
+            <MapPin className="h-5 w-5 text-gold" /> {hotel.destinationId?.title}
           </p>
         </div>
       </section>
@@ -164,16 +166,16 @@ export default function HotelDetailPage() {
       <section className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">About this Hotel</h2>
-            <p className="text-gray-600 leading-relaxed text-lg">{hotel.description}</p>
+            <h2 className="text-2xl font-bold text-ivory mb-4">About this Hotel</h2>
+            <p className="text-stone leading-relaxed text-lg">{hotel.description}</p>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Hotel Amenities</h2>
+            <h2 className="text-2xl font-bold text-ivory mb-4">Hotel Amenities</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {hotel.amenities.map((amenity, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-gray-700 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                  <CheckCircle className="h-5 w-5 text-emerald-500" /> {amenity}
+                <div key={idx} className="flex items-center gap-2 text-ivory bg-card p-3 rounded-xl border border-gold/15 shadow-sm">
+                  <CheckCircle className="h-5 w-5 text-ivory0" /> {amenity}
                 </div>
               ))}
             </div>
@@ -181,20 +183,20 @@ export default function HotelDetailPage() {
 
           {/* Room Selection Toggle */}
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Your Room</h2>
+            <h2 className="text-2xl font-bold text-ivory mb-6">Select Your Room</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {standardRoom && (
                 <div 
                   onClick={() => setSelectedRoom("Standard")}
                   className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 ${
-                    selectedRoom === "Standard" ? "border-emerald-500 bg-emerald-50 shadow-md ring-2 ring-emerald-500/20" : "border-gray-200 bg-white hover:border-emerald-300"
+                    selectedRoom === "Standard" ? "border-gold bg-gold/5 ring-2 ring-gold/20" : "border-gold/20 bg-card hover:border-gold"
                   }`}
                 >
-                  <h3 className="text-xl font-bold text-gray-900">Standard Room</h3>
-                  <p className="text-3xl font-extrabold text-emerald-600 mt-2">${standardRoom.price} <span className="text-sm text-gray-500 font-normal">/ night</span></p>
+                  <h3 className="text-xl font-bold text-ivory">Standard Room</h3>
+                  <p className="text-3xl font-extrabold text-gold mt-2">${standardRoom.price} <span className="text-sm text-stone font-normal">/ night</span></p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {standardRoom.amenities.map((a, i) => (
-                      <Badge key={i} variant="secondary" className="bg-emerald-100 text-emerald-700">{a}</Badge>
+                      <Badge key={i} variant="secondary" className="bg-gold/10 text-gold">{a}</Badge>
                     ))}
                   </div>
                 </div>
@@ -203,14 +205,14 @@ export default function HotelDetailPage() {
                 <div 
                   onClick={() => setSelectedRoom("Deluxe")}
                   className={`cursor-pointer rounded-2xl p-6 border-2 transition-all duration-300 ${
-                    selectedRoom === "Deluxe" ? "border-emerald-500 bg-emerald-50 shadow-md ring-2 ring-emerald-500/20" : "border-gray-200 bg-white hover:border-emerald-300"
+                    selectedRoom === "Deluxe" ? "border-gold bg-gold/5 ring-2 ring-gold/20" : "border-gold/20 bg-card hover:border-gold"
                   }`}
                 >
                   <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-bold text-gray-900">Deluxe Room</h3>
+                    <h3 className="text-xl font-bold text-ivory">Deluxe Room</h3>
                     <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">Premium</Badge>
                   </div>
-                  <p className="text-3xl font-extrabold text-emerald-600 mt-2">${deluxeRoom.price} <span className="text-sm text-gray-500 font-normal">/ night</span></p>
+                  <p className="text-3xl font-extrabold text-gold mt-2">${deluxeRoom.price} <span className="text-sm text-stone font-normal">/ night</span></p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {deluxeRoom.amenities.map((a, i) => (
                       <Badge key={i} variant="secondary" className="bg-yellow-100 text-yellow-800">{a}</Badge>
@@ -221,24 +223,24 @@ export default function HotelDetailPage() {
             </div>
 
             {/* Room Deep Dive */}
-            <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-card rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2">
                 <div className="bg-gray-100 min-h-[300px] relative">
                    {room.roomImages?.[0] ? (
                      <img src={room.roomImages[0]} alt={room.type} className="w-full h-full object-cover" />
                    ) : (
-                     <div className="absolute inset-0 flex items-center justify-center text-gray-400">No Image Available</div>
+                     <div className="absolute inset-0 flex items-center justify-center text-stone">No Image Available</div>
                    )}
                 </div>
                 <div className="p-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">{room.type} Details</h3>
+                  <h3 className="text-2xl font-bold text-ivory mb-6">{room.type} Details</h3>
                   <div className="space-y-6">
                     <div>
-                      <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Room Features</h4>
+                      <h4 className="text-sm font-bold text-stone uppercase tracking-wider mb-3">Room Features</h4>
                       <ul className="space-y-2">
                         {room.features.map((f, i) => (
-                          <li key={i} className="flex items-center text-gray-700">
-                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-3" /> {f}
+                          <li key={i} className="flex items-center text-ivory">
+                            <div className="h-1.5 w-1.5 rounded-full bg-gold/50 mr-3" /> {f}
                           </li>
                         ))}
                       </ul>
@@ -252,17 +254,17 @@ export default function HotelDetailPage() {
 
         {/* Booking Sidebar */}
         <div className="relative">
-          <div className="sticky top-24 bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
-            <div className="mb-6 pb-6 border-b border-gray-100">
-              <p className="text-sm text-gray-500 font-medium uppercase tracking-wider mb-1">Price</p>
-              <h3 className="text-4xl font-extrabold text-emerald-600">${room?.price || 0} <span className="text-lg text-gray-500 font-normal">/ night</span></h3>
-              <p className="text-sm font-semibold text-gray-700 mt-2">{selectedRoom} Room Selected</p>
+          <div className="sticky top-24 bg-card rounded-3xl shadow-2xl p-8 border border-gold/15">
+            <div className="mb-6 pb-6 border-b border-gold/15">
+              <p className="text-sm text-stone font-medium uppercase tracking-wider mb-1">Price</p>
+              <h3 className="text-4xl font-extrabold text-gold">${room?.price || 0} <span className="text-lg text-stone font-normal">/ night</span></h3>
+              <p className="text-sm font-semibold text-ivory mt-2">{selectedRoom} Room Selected</p>
             </div>
 
             <form onSubmit={handleBooking} className="space-y-4">
-              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4">
-                 <label className="text-sm font-bold text-gray-800 mb-2 block flex items-center gap-2">
-                   <CalendarIcon className="h-4 w-4 text-emerald-600" /> Select Dates
+              <div className="bg-background rounded-xl border border-gray-200 p-4 mb-4">
+                 <label className="text-sm font-bold text-ivory mb-2 block flex items-center gap-2">
+                   <CalendarIcon className="h-4 w-4 text-gold" /> Select Dates
                  </label>
                  <Calendar
                     mode="range"
@@ -287,58 +289,65 @@ export default function HotelDetailPage() {
                     disabled={isDateDisabled}
                     modifiers={{ soldOut: disabledDates }}
                     modifiersClassNames={{ soldOut: "bg-red-500/10 text-red-600 font-bold line-through" }}
-                    className="rounded-md border bg-white"
+                    className="rounded-md border bg-card"
                  />
-                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                 <div className="mt-3 flex items-center gap-2 text-xs text-stone">
                    <div className="w-3 h-3 bg-red-500/20 rounded-full border border-red-500/50" /> = Sold Out
                  </div>
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Full Name *</label>
+                <label className="text-sm font-semibold text-ivory mb-1.5 block">Full Name *</label>
                 <Input
                   required
                   value={guestName}
                   onChange={(e) => setGuestName(sanitizeFullNameInput(e.target.value))}
-                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
+                  className="h-12 rounded-xl bg-background border-gray-200"
                   placeholder="John Doe"
                   maxLength={100}
                 />
-                <p className="text-xs text-gray-500 mt-1">Letters and spaces only.</p>
+                <p className="text-xs text-stone mt-1">Letters and spaces only.</p>
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Email *</label>
+                <label className="text-sm font-semibold text-ivory mb-1.5 block">Email *</label>
                 <Input
                   type="email"
                   required
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value.trimStart())}
-                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
+                  className="h-12 rounded-xl bg-background border-gray-200"
                   placeholder="john@example.com"
                   maxLength={254}
                 />
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Phone * (10 digits)</label>
+                <label className="text-sm font-semibold text-ivory mb-1.5 block">Phone * (10 digits)</label>
                 <Input
                   required
                   value={guestPhone}
                   onChange={(e) => setGuestPhone(normalizePhoneDigits(e.target.value))}
-                  className="h-12 rounded-xl bg-gray-50 border-gray-200"
+                  className="h-12 rounded-xl bg-background border-gray-200"
                   placeholder="9800000000"
                   maxLength={10}
                   inputMode="numeric"
                 />
               </div>
 
-              <Button type="submit" disabled={submitting} className="w-full h-14 mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-emerald-600/20">
+              <Button type="submit" disabled={submitting} className="w-full h-14 mt-4">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "Book Now"}
               </Button>
             </form>
-            <p className="text-center text-sm text-gray-500 mt-4">You won't be charged yet</p>
+            <p className="text-center text-sm text-stone mt-4">You won't be charged yet</p>
           </div>
         </div>
       </section>
+
+      <BookingSuccessDialog
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        title="Booking Request Sent!"
+        description="We will confirm your stay shortly."
+      />
 
       <Footer />
     </div>

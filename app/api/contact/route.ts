@@ -10,6 +10,7 @@ import {
   isSubjectLine,
   isMessageBody,
 } from "@/lib/form-validation";
+import { queueContactInquiryEmails } from "@/lib/site-notifications";
 
 /**
  * GET /api/contact
@@ -84,6 +85,14 @@ export async function POST(req: NextRequest) {
       phone: String(phone).replace(/\D/g, "").slice(0, 10),
       subject: subject.trim(),
       message: message.trim(),
+    });
+
+    queueContactInquiryEmails({
+      name: inquiry.name,
+      email: inquiry.email,
+      phone: inquiry.phone,
+      subject: inquiry.subject,
+      message: inquiry.message,
     });
 
     return NextResponse.json(

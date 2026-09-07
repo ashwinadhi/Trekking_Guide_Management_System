@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
+import { PageHero } from "@/components/luxury/page-hero"
 import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { getSessionId } from "@/lib/session"
@@ -81,9 +82,9 @@ export default function EquipmentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          itemId: item.id,
+          itemId: item._id,
           itemType: "equipment",
-          name: item.name,
+          name: item.title,
           price: item.price,
           quantity: 1,
           rentalDays: 1,
@@ -98,30 +99,26 @@ export default function EquipmentPage() {
 
     toast({
       title: "Added to Cart!",
-      description: `${item.name} has been added to your cart.`,
+      description: `${item.title} has been added to your cart.`,
     })
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-r from-green-50 to-blue-50">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Equipment Rental</h1>
-          <p className="text-xl text-gray-600">
-            Rent high-quality trekking and mountaineering equipment for your Nepal adventure
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Atelier"
+        title="Equipment rental"
+        subtitle="High-altitude kit, fitted and delivered to your Kathmandu hotel before departure."
+      />
 
       {/* Filters and Search */}
-      <section className="py-8 bg-white border-b">
+      <section className="py-8 bg-card border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone h-4 w-4" />
               <Input
                 placeholder="Search equipment..."
                 value={searchTerm}
@@ -165,15 +162,15 @@ export default function EquipmentPage() {
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading ? (
-            <div className="flex justify-center p-20"><Loader2 className="animate-spin text-emerald-500 h-10 w-10" /></div>
+            <div className="flex justify-center p-20"><Loader2 className="animate-spin text-ivory0 h-10 w-10" /></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredEquipment.map((item) => (
                 <Card key={item._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="relative">
                     <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-48 object-cover" />
-                    <Badge className="absolute top-2 left-2 bg-white/90 text-gray-800">{item.category}</Badge>
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                    <Badge className="absolute top-2 left-2 bg-card/90 text-ivory">{item.category}</Badge>
+                    <div className="absolute top-2 right-2 bg-card/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
                       <Star className="h-3 w-3 text-yellow-400 fill-current" />
                       <span className="text-xs font-medium">{item.rating}</span>
                     </div>
@@ -181,7 +178,7 @@ export default function EquipmentPage() {
 
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-lg mb-2 line-clamp-2">{item.title}</h3>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
+                    <p className="text-stone text-sm mb-3 line-clamp-2">{item.description}</p>
 
                     <div className="flex flex-wrap gap-1 mb-3">
                       {item.features?.slice(0, 2).map((feature: string, index: number) => (
@@ -192,18 +189,18 @@ export default function EquipmentPage() {
                     </div>
 
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <div className="flex items-center gap-1 text-sm text-stone">
                         <Star className="h-3 w-3 text-yellow-400 fill-current" />
                         <span>{item.rating}</span>
                         <span>({item.reviews || 0})</span>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600">${item.price}</div>
-                        <div className="text-xs text-gray-500">per day</div>
+                        <div className="text-2xl font-bold text-gold">${item.price}</div>
+                        <div className="text-xs text-stone">per day</div>
                       </div>
                     </div>
 
-                    <Button onClick={() => addToCart(item)} className="w-full bg-green-700 hover:bg-green-800">
+                    <Button onClick={() => addToCart(item)} className="w-full bg-gold hover:bg-gold/90">
                       <Plus className="h-4 w-4 mr-2" />
                       Add to Cart
                     </Button>
@@ -215,18 +212,18 @@ export default function EquipmentPage() {
 
           {!loading && filteredEquipment.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No equipment found matching your criteria.</p>
+              <p className="text-stone text-lg">No equipment found matching your criteria.</p>
             </div>
           )}
         </div>
       </section>
 
       {/* Rental Information */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-card">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Rental Information</h2>
-            <p className="text-xl text-gray-600">Everything you need to know about our equipment rental service</p>
+            <h2 className="text-3xl font-bold text-ivory mb-4">Rental Information</h2>
+            <p className="text-xl text-stone">Everything you need to know about our equipment rental service</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

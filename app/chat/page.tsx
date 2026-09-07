@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import Header from "@/components/header"
+import Footer from "@/components/footer"
 
 export default function ChatPage() {
   const { toast } = useToast()
@@ -143,37 +145,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
-              </Link>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Home
-                </Link>
-                <Link href="/treks" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Treks
-                </Link>
-                <Link href="/chat" className="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Messages
-                </Link>
-                <Link href="/contact" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Contact
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <Header />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-28">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)]">
           {/* Conversations List */}
           <div className="lg:col-span-1">
@@ -190,8 +165,8 @@ export default function ChatPage() {
                     <div
                       key={conversation.id}
                       onClick={() => setSelectedChat(conversation.id)}
-                      className={`p-4 cursor-pointer hover:bg-gray-50 border-b ${
-                        selectedChat === conversation.id ? "bg-green-50 border-l-4 border-l-green-500" : ""
+                      className={`p-4 cursor-pointer hover:bg-background border-b ${
+                        selectedChat === conversation.id ? "bg-gold/5 border-l-4 border-l-gold" : ""
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -206,20 +181,20 @@ export default function ChatPage() {
                             </AvatarFallback>
                           </Avatar>
                           {conversation.online && (
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-gold rounded-full border-2 border-white"></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-sm truncate">{conversation.name}</h3>
-                            <span className="text-xs text-gray-500">{conversation.timestamp}</span>
+                            <span className="text-xs text-stone">{conversation.timestamp}</span>
                           </div>
-                          <p className="text-xs text-gray-600 mb-1">{conversation.role}</p>
-                          <p className="text-sm text-gray-700 truncate">{conversation.lastMessage}</p>
-                          <p className="text-xs text-green-600 mt-1">{conversation.booking}</p>
+                          <p className="text-xs text-stone mb-1">{conversation.role}</p>
+                          <p className="text-sm text-ivory truncate">{conversation.lastMessage}</p>
+                          <p className="text-xs text-gold mt-1">{conversation.booking}</p>
                         </div>
                         {conversation.unread > 0 && (
-                          <Badge className="bg-green-600 text-white text-xs">{conversation.unread}</Badge>
+                          <Badge className="bg-gold text-white text-xs">{conversation.unread}</Badge>
                         )}
                       </div>
                     </div>
@@ -250,8 +225,8 @@ export default function ChatPage() {
                     </Avatar>
                     <div>
                       <h3 className="font-semibold">{currentChat?.name}</h3>
-                      <p className="text-sm text-gray-600">{currentChat?.role}</p>
-                      <p className="text-xs text-green-600">{currentChat?.booking}</p>
+                      <p className="text-sm text-stone">{currentChat?.role}</p>
+                      <p className="text-xs text-gold">{currentChat?.booking}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -274,7 +249,7 @@ export default function ChatPage() {
                   <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        msg.sender === "user" ? "bg-green-600 text-white" : "bg-white border shadow-sm"
+                        msg.sender === "user" ? "bg-gold text-white" : "bg-card border shadow-sm"
                       }`}
                     >
                       {msg.type === "text" && <p className="text-sm">{msg.content}</p>}
@@ -290,7 +265,7 @@ export default function ChatPage() {
                           />
                         </div>
                       )}
-                      <p className={`text-xs mt-1 ${msg.sender === "user" ? "text-green-100" : "text-gray-500"}`}>
+                      <p className={`text-xs mt-1 ${msg.sender === "user" ? "text-ivory" : "text-stone"}`}>
                         {msg.timestamp}
                       </p>
                     </div>
@@ -318,7 +293,7 @@ export default function ChatPage() {
                       <Smile className="h-4 w-4" />
                     </Button>
                   </div>
-                  <Button onClick={handleSendMessage} className="bg-green-600 hover:bg-green-700">
+                  <Button onClick={handleSendMessage} className="bg-gold hover:bg-gold/90">
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
@@ -327,6 +302,7 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

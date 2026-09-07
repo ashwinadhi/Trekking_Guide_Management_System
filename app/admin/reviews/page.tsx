@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Star, Trash2, Loader2, MessageSquare, User, Tag } from "lucide-react";
+import { Star, Trash2, Loader2, MessageSquare, User, Tag, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ export default function AdminReviewsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-12 w-12 animate-spin text-emerald-500 mb-4" />
+        <Loader2 className="h-12 w-12 animate-spin text-gold mb-4" />
         <p className="text-gray-400 font-medium">Loading reviews...</p>
       </div>
     );
@@ -65,14 +65,14 @@ export default function AdminReviewsPage() {
           <h1 className="text-3xl font-bold text-white">Manage Reviews</h1>
           <p className="text-gray-400 mt-1">Moderate user feedback and testimonials</p>
         </div>
-        <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 px-4 py-1">
+        <Badge className="bg-gold/10 text-gold border-gold/20 px-4 py-1">
           {reviews.length} Total Reviews
         </Badge>
       </div>
 
       <div className="grid grid-cols-1 gap-4">
         {reviews.map((review) => (
-          <Card key={review._id} className="bg-gray-900 border-gray-800 hover:border-emerald-500/30 transition-all overflow-hidden">
+          <Card key={review._id} className="bg-gray-900 border-gray-800 hover:border-gold/30 transition-all overflow-hidden">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* User Info */}
@@ -80,7 +80,7 @@ export default function AdminReviewsPage() {
                   <img 
                     src={review.userImage} 
                     alt={review.userName} 
-                    className="w-16 h-16 rounded-2xl border-2 border-emerald-500/20"
+                    className="w-16 h-16 rounded-2xl border-2 border-gold/20"
                   />
                   <div>
                     <h3 className="text-white font-bold text-sm truncate w-full">{review.userName}</h3>

@@ -62,12 +62,12 @@ export default function AdminLocationsPage() {
     } catch (err) { console.error(err); }
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-emerald-500 h-10 w-10" /></div>;
+  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-gold h-10 w-10" /></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 p-8">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+        <h1 className="font-display text-3xl text-ivory">
           Manage Locations
         </h1>
         <p className="text-gray-400 mt-1">Official Pickup & Drop-off points</p>
@@ -82,7 +82,7 @@ export default function AdminLocationsPage() {
             className="bg-gray-800 border-gray-700 text-white"
             required
           />
-          <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button type="submit" disabled={submitting} className="bg-gold hover:bg-gold/90">
             {submitting ? <Loader2 className="animate-spin h-4 w-4" /> : <Plus className="h-4 w-4 mr-2" />}
             Add Location
           </Button>
@@ -91,9 +91,9 @@ export default function AdminLocationsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {locations.map((loc) => (
-          <div key={loc._id} className="flex items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-emerald-500/30 transition-all">
+          <div key={loc._id} className="flex items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-gold/30 transition-all">
             <div className="flex items-center gap-3">
-              <MapPin className="text-emerald-400 h-5 w-5" />
+              <MapPin className="text-gold h-5 w-5" />
               <span className="text-white font-medium">{loc.name}</span>
             </div>
             <Button variant="ghost" size="sm" onClick={() => handleDelete(loc._id)} className="text-red-400 hover:text-red-300 hover:bg-red-500/10">

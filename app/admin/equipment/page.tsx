@@ -1,9 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Edit, Trash2, Loader2, Save, X, Package, Star } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Package, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
+import {
+  AdminFormShell,
+  AdminFormBody,
+  AdminFormSection,
+  AdminFormGrid,
+  AdminFormField,
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormActions,
+} from "@/components/admin/admin-form";
 
 interface EquipmentItem {
   _id: string;
@@ -101,82 +112,72 @@ export default function AdminEquipmentPage() {
     setIsEditing(true);
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-emerald-500 h-10 w-10" /></div>;
+  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-gold h-10 w-10" /></div>;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 p-8 bg-gray-950 min-h-screen">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-            Equipment Management
-          </h1>
-          <p className="text-gray-400 mt-1">Add and manage trekking gear for rental</p>
-        </div>
-        {!isEditing && (
-          <Button onClick={() => { setCurrentForm(initialFormState); setIsEditing(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Plus className="mr-2 h-4 w-4" /> Add New Gear
-          </Button>
-        )}
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <AdminPageHeader
+        title="Equipment management"
+        description="Add and manage trekking gear for rental."
+        action={
+          !isEditing ? (
+            <Button onClick={() => { setCurrentForm(initialFormState); setIsEditing(true); }} className="bg-gold hover:bg-gold/90">
+              <Plus className="mr-2 h-4 w-4" /> Add gear
+            </Button>
+          ) : undefined
+        }
+      />
 
       {isEditing ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Package className="h-5 w-5 text-emerald-400" />
-              {currentForm._id ? "Edit Equipment" : "New Equipment"}
-            </h2>
-            <Button variant="ghost" onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-white">
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        <AdminFormShell
+          mode={currentForm._id ? "edit" : "create"}
+          title={currentForm._id ? "Edit equipment" : "New equipment"}
+          description="Details shown on the equipment rental page."
+          icon={Package}
+          onClose={() => setIsEditing(false)}
+        >
+          <form onSubmit={handleSave}>
+            <AdminFormBody>
+              <AdminFormSection title="Gear details">
+                <AdminFormGrid>
+                  <AdminFormField label="Title" required>
+                    <AdminFormInput required value={currentForm.title || ""} onChange={(e) => setCurrentForm({ ...currentForm, title: e.target.value })} placeholder="Carbon trekking poles" />
+                  </AdminFormField>
+                  <AdminFormField label="Category">
+                    <AdminFormInput value={currentForm.category || ""} onChange={(e) => setCurrentForm({ ...currentForm, category: e.target.value })} placeholder="Accessories" />
+                  </AdminFormField>
+                  <AdminFormField label="Price per day ($)" required>
+                    <AdminFormInput type="number" required min="0" value={currentForm.price || 0} onChange={(e) => setCurrentForm({ ...currentForm, price: parseFloat(e.target.value) })} />
+                  </AdminFormField>
+                  <AdminFormField label="Rating (1–5)">
+                    <AdminFormInput type="number" step="0.1" min="1" max="5" value={currentForm.rating || 5} onChange={(e) => setCurrentForm({ ...currentForm, rating: parseFloat(e.target.value) })} />
+                  </AdminFormField>
+                  <AdminFormField label="Image URL" required fullWidth>
+                    <AdminFormInput required value={currentForm.image || ""} onChange={(e) => setCurrentForm({ ...currentForm, image: e.target.value })} placeholder="https://..." />
+                  </AdminFormField>
+                  <AdminFormField label="Description" required fullWidth>
+                    <AdminFormTextarea required rows={4} value={currentForm.description || ""} onChange={(e) => setCurrentForm({ ...currentForm, description: e.target.value })} />
+                  </AdminFormField>
+                  <AdminFormField label="Features" hint="Comma-separated list." fullWidth>
+                    <AdminFormInput
+                      value={currentForm.features?.join(", ") || ""}
+                      onChange={(e) => setCurrentForm({ ...currentForm, features: e.target.value.split(",").map((f) => f.trim()).filter(Boolean) })}
+                      placeholder="Lightweight, Durable, Adjustable"
+                    />
+                  </AdminFormField>
+                </AdminFormGrid>
+              </AdminFormSection>
 
-          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-300">Title *</label>
-                <input required value={currentForm.title || ""} onChange={(e) => setCurrentForm({ ...currentForm, title: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Carbon Trekking Poles" />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-300">Category</label>
-                <input value={currentForm.category || ""} onChange={(e) => setCurrentForm({ ...currentForm, category: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Accessories" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-300">Price per Day ($) *</label>
-                  <input type="number" required min="0" value={currentForm.price || 0} onChange={(e) => setCurrentForm({ ...currentForm, price: parseFloat(e.target.value) })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-300">Rating (1-5)</label>
-                  <input type="number" step="0.1" min="1" max="5" value={currentForm.rating || 5} onChange={(e) => setCurrentForm({ ...currentForm, rating: parseFloat(e.target.value) })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-300">Image URL *</label>
-                <input required value={currentForm.image || ""} onChange={(e) => setCurrentForm({ ...currentForm, image: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="https://..." />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-300">Description *</label>
-                <textarea required rows={4} value={currentForm.description || ""} onChange={(e) => setCurrentForm({ ...currentForm, description: e.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none resize-none" placeholder="Short summary of the gear..." />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-300">Features (comma separated)</label>
-                <input value={currentForm.features?.join(", ") || ""} onChange={(e) => setCurrentForm({ ...currentForm, features: e.target.value.split(",").map(f => f.trim()).filter(Boolean) })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Lightweight, Durable, Adjustable" />
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="bg-transparent border-gray-700 text-gray-400 hover:text-white">Cancel</Button>
-                <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[120px]">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> Save</>}
-                </Button>
-              </div>
-            </div>
+              <AdminFormActions
+                onCancel={() => setIsEditing(false)}
+                submitLabel={currentForm._id ? "Update gear" : "Save gear"}
+                loading={submitting}
+              />
+            </AdminFormBody>
           </form>
-        </div>
+        </AdminFormShell>
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <table className="w-full text-left text-gray-300">
             <thead className="bg-gray-800 text-gray-400 uppercase text-xs">
               <tr>
@@ -197,7 +198,7 @@ export default function AdminEquipmentPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm">{item.category}</td>
-                  <td className="px-6 py-4 font-bold text-emerald-400">${item.price}</td>
+                  <td className="px-6 py-4 font-bold text-gold">${item.price}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1">
                       <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />

@@ -5,7 +5,12 @@ import {
   Calendar, Trash2, Loader2, Search, CheckCircle,
   XCircle, Clock, Eye, AlertCircle, Mountain, User
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  BookingStatusDialog,
+  type BookingStatusAction,
+} from "@/components/admin/booking-status-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { AdminPageHeader, AdminPanel } from "@/components/admin/admin-ui";
 
 interface Booking {
   _id: string;
@@ -19,16 +24,32 @@ interface Booking {
   bookingDetails: {
     guideName?: string;
     trekName?: string;
+    hotelName?: string;
+    roomType?: string;
     startDate?: string;
+    endDate?: string;
     groupSize?: string;
   };
+  isHotelBooking?: boolean;
+}
+
+interface PendingStatusAction {
+  id: string;
+  status: "confirmed" | "cancelled";
+  action: BookingStatusAction;
+  customerName: string;
+  customerEmail: string;
+  summary: string;
+  isHotelBooking?: boolean;
 }
 
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingStatusAction | null>(null);
+  const { toast } = useToast();
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -75,29 +96,78 @@ export default function AdminBookingsPage() {
     fetchBookings();
   }, [fetchBookings]);
 
-  const updateStatus = async (id: string, status: string, isHotelBooking?: boolean) => {
-    setActionLoading(id);
+  const openStatusDialog = (
+    booking: Booking,
+    status: "confirmed" | "cancelled",
+    action: BookingStatusAction
+  ) => {
+    const details = booking.bookingDetails || {};
+    const summary = booking.isHotelBooking
+      ? `Hotel: ${details.hotelName || "—"} · ${details.startDate || "—"} → ${details.endDate || "—"}`
+      : [
+          details.trekName && `Trek: ${details.trekName}`,
+          details.guideName && `Guide: ${details.guideName}`,
+          details.startDate && `Start: ${details.startDate}`,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "Booking request";
+
+    setPendingAction({
+      id: booking._id,
+      status,
+      action,
+      customerName: booking.name,
+      customerEmail: booking.email,
+      summary,
+      isHotelBooking: booking.isHotelBooking,
+    });
+  };
+
+  const updateStatus = async (
+    id: string,
+    status: string,
+    isHotelBooking?: boolean,
+    notifyCustomer = false
+  ) => {
+    setActionLoading(true);
     try {
       const endpoint = isHotelBooking ? `/api/hotel-bookings/${id}` : `/api/bookings/${id}`;
       const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, notifyCustomer }),
       });
       if (!res.ok) throw new Error("Failed to update status");
       await fetchBookings();
+      if (notifyCustomer) {
+        toast({
+          title: status === "confirmed" ? "Booking approved" : "Booking rejected",
+          description: "Status updated and customer notified by email.",
+        });
+      }
     } catch (err: any) {
-      alert(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
-      setActionLoading(null);
+      setActionLoading(false);
+      setPendingAction(null);
     }
+  };
+
+  const handleConfirmStatusChange = () => {
+    if (!pendingAction) return;
+    updateStatus(
+      pendingAction.id,
+      pendingAction.status,
+      pendingAction.isHotelBooking,
+      true
+    );
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+          <Loader2 className="h-10 w-10 animate-spin text-gold" />
           <p className="text-gray-400 text-lg font-medium">Loading bookings...</p>
         </div>
       </div>
@@ -105,15 +175,11 @@ export default function AdminBookingsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-            Bookings Management
-          </h1>
-          <p className="text-gray-400 mt-1">Review and manage all incoming booking requests</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <AdminPageHeader
+        title="Guide & Hotel Bookings"
+        description="Review, approve, or reject incoming guide and hotel reservation requests."
+      />
 
       {error && (
         <div className="flex items-center gap-3 px-5 py-3.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl">
@@ -122,14 +188,14 @@ export default function AdminBookingsPage() {
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden shadow-xl">
-        <div className="p-6 border-b border-gray-700/50 flex items-center gap-4">
+      <AdminPanel className="overflow-hidden">
+        <div className="border-b border-slate-200 p-6 dark:border-gray-700/50 flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
             <input
               type="text"
               placeholder="Search by name or email..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-gold/50 dark:bg-gray-900/50 dark:border-gray-700 dark:text-white"
             />
           </div>
         </div>
@@ -165,7 +231,7 @@ export default function AdminBookingsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-1">
                         {booking.bookingDetails?.trekName && (
-                          <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+                          <div className="flex items-center gap-1.5 text-xs text-gold">
                             <Mountain className="h-3.5 w-3.5" /> {booking.bookingDetails.trekName}
                           </div>
                         )}
@@ -182,12 +248,12 @@ export default function AdminBookingsPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-bold text-emerald-400">
+                    <td className="px-6 py-4 whitespace-nowrap font-bold text-gold">
                       ${booking.totalPrice}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                        booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                        booking.status === 'confirmed' ? 'bg-gold/10 text-gold border-gold/20' :
                         booking.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                         'bg-amber-500/10 text-amber-400 border-amber-500/20'
                       }`}>
@@ -202,25 +268,25 @@ export default function AdminBookingsPage() {
                         {booking.status === 'pending' && (
                           <>
                             <button
-                              onClick={() => updateStatus(booking._id, 'confirmed', (booking as any).isHotelBooking)}
-                              disabled={actionLoading === booking._id}
-                              className="px-3 py-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-lg transition-all"
+                              onClick={() => openStatusDialog(booking, "confirmed", "approve")}
+                              disabled={actionLoading}
+                              className="px-3 py-1.5 text-xs font-bold text-gold bg-gold/10 hover:bg-gold/20 border border-gold/20 transition-all"
                             >
                               Approve
                             </button>
                             <button
-                              onClick={() => updateStatus(booking._id, 'cancelled', (booking as any).isHotelBooking)}
-                              disabled={actionLoading === booking._id}
+                              onClick={() => openStatusDialog(booking, "cancelled", "reject")}
+                              disabled={actionLoading}
                               className="px-3 py-1.5 text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-all"
                             >
-                              Cancel
+                              Reject
                             </button>
                           </>
                         )}
                         {booking.status !== 'pending' && (
                           <button
-                            onClick={() => updateStatus(booking._id, 'pending', (booking as any).isHotelBooking)}
-                            disabled={actionLoading === booking._id}
+                            onClick={() => updateStatus(booking._id, "pending", booking.isHotelBooking)}
+                            disabled={actionLoading}
                             className="px-3 py-1.5 text-xs font-bold text-gray-400 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-all"
                           >
                             Revert to Pending
@@ -234,7 +300,20 @@ export default function AdminBookingsPage() {
             </table>
           </div>
         )}
-      </div>
+      </AdminPanel>
+
+      {pendingAction && (
+        <BookingStatusDialog
+          open={!!pendingAction}
+          onOpenChange={(open) => !open && !actionLoading && setPendingAction(null)}
+          action={pendingAction.action}
+          customerName={pendingAction.customerName}
+          customerEmail={pendingAction.customerEmail}
+          summary={pendingAction.summary}
+          loading={actionLoading}
+          onConfirm={handleConfirmStatusChange}
+        />
+      )}
     </div>
   );
 }

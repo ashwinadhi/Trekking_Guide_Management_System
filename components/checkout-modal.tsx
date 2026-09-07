@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { X, Calendar, MapPin, Loader2, Package, MessageSquare, Users } from "lucide-react"
 import { useCart, type CartItem } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
+import { BookingSuccessDialog } from "@/components/booking-success-dialog"
 import { getSessionId } from "@/lib/session"
 import {
   isValidEmail,
@@ -31,6 +32,8 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
   const { dispatch } = useCart()
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [successTotal, setSuccessTotal] = useState(0)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -112,13 +115,16 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
         throw new Error(err.error || "Rental booking failed")
       }
 
-      toast({
-        title: "Rental Request Submitted!",
-        description: `Your gear rental request has been received. Total: $${total.toFixed(2)}`,
+      const rental = await res.json()
+      setSuccessTotal(rental.totalPrice)
+
+      await fetch(`/api/cart?sessionId=${encodeURIComponent(sessionId)}`, {
+        method: "DELETE",
       })
 
       dispatch({ type: "CLEAR_CART" })
       dispatch({ type: "CLOSE_CART" })
+      setShowSuccessDialog(true)
       onClose()
     } catch (error: any) {
       toast({
@@ -131,13 +137,21 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !showSuccessDialog) return null
 
   return (
+    <>
+    <BookingSuccessDialog
+      open={showSuccessDialog}
+      onOpenChange={setShowSuccessDialog}
+      title="Rental Request Submitted!"
+      description={`Your gear rental request has been received. Total: $${successTotal.toFixed(2)}`}
+    />
+    {isOpen && (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
-          <h2 className="text-2xl font-bold text-white">Complete Your Rental</h2>
+      <div className="bg-card border border-gold/25 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gold/20">
+          <h2 className="font-display text-2xl text-ivory">Complete Your Rental</h2>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
           </Button>
@@ -146,7 +160,7 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
         <form onSubmit={handleSubmit} className="p-6 space-y-6 text-gray-300">
           {/* Order Summary */}
           <div className="bg-gray-800/50 rounded-2xl p-5 border border-gray-700/50">
-            <h3 className="font-bold text-emerald-400 mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-gold mb-4 flex items-center gap-2">
               <Package size={18} /> Order Summary Breakdown
             </h3>
             <div className="space-y-4">
@@ -165,7 +179,7 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
               ))}
               <div className="border-t border-gray-700 mt-4 pt-4 flex justify-between items-center px-2">
                 <span className="font-bold text-white text-lg">Estimated Total:</span>
-                <span className="text-3xl font-black text-emerald-400">${total.toFixed(2)}</span>
+                <span className="font-display text-3xl text-gold">${total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -194,21 +208,21 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
               <div className="space-y-2">
                 <Label htmlFor="startDate" className="text-xs uppercase tracking-wider text-gray-500">Rental Start Date *</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                   <Input id="startDate" name="startDate" type="date" value={formData.startDate} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12 pl-10" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endDate" className="text-xs uppercase tracking-wider text-gray-500">Rental End Date *</Label>
                 <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                   <Input id="endDate" name="endDate" type="date" value={formData.endDate} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12 pl-10" />
                 </div>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="deliveryLocation" className="text-xs uppercase tracking-wider text-gray-500">Delivery Location / Hotel *</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gold" />
                   <Input id="deliveryLocation" name="deliveryLocation" value={formData.deliveryLocation} onChange={handleInputChange} required className="bg-gray-800 border-gray-700 text-white rounded-xl h-12 pl-10" placeholder="e.g. Radisson Hotel, Thamel" />
                 </div>
               </div>
@@ -223,7 +237,7 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
             </div>
           </div>
 
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 text-sm text-emerald-400">
+          <div className="border border-gold/25 bg-gold/5 rounded-none p-4 text-sm text-gold">
             Payment will be collected during delivery/pickup. No upfront payment required.
           </div>
 
@@ -235,7 +249,7 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
             <Button
               type="submit"
               disabled={isSubmitting || !checkoutFormValid}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-12 font-bold"
+              className="flex-1 h-12"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-5 w-5" /> : `Confirm Rental`}
             </Button>
@@ -243,5 +257,7 @@ export function CheckoutModal({ isOpen, onClose, cartItems, total }: CheckoutMod
         </form>
       </div>
     </div>
+    )}
+    </>
   )
 }

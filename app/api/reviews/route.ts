@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/db";
 import { Review } from "@/models/Review";
-import { isReviewDescription } from "@/lib/form-validation";
+import { isReviewDescription, isFullNameNoSpecial } from "@/lib/form-validation";
+import { queueNewReviewAdminEmail } from "@/lib/site-notifications";
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,14 +22,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Please sign in to leave a review" }, { status: 401 });
-    }
-
     await connectDB();
     const body = await req.json();
-    const { description, rating, slug } = body;
+    const { description, rating, slug, userName } = body;
 
     if (!description || !rating || !slug) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -41,12 +37,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const session = await getServerSession(authOptions);
+    let displayName = userName ? String(userName).trim() : "";
+
+    if (session?.user?.name) {
+      displayName = session.user.name;
+    }
+
+    if (!displayName || !isFullNameNoSpecial(displayName)) {
+      return NextResponse.json(
+        { error: "Please provide your name using letters and spaces only" },
+        { status: 400 }
+      );
+    }
+
     const review = await Review.create({
-      userName: session.user?.name,
-      userImage: session.user?.image || "https://ui-avatars.com/api/?name=" + session.user?.name,
+      userName: displayName,
+      userImage: session?.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`,
       description,
       rating: Number(rating),
-      slug
+      slug,
+    });
+
+    queueNewReviewAdminEmail({
+      userName: displayName,
+      rating: Number(rating),
+      slug: String(slug),
+      description: String(description),
     });
 
     return NextResponse.json(review, { status: 201 });

@@ -14,7 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import { PageHero } from "@/components/luxury/page-hero";
 import { useToast } from "@/hooks/use-toast";
+import { BookingSuccessDialog } from "@/components/booking-success-dialog";
 import { getSessionId } from "@/lib/session";
 import {
   isValidEmail,
@@ -25,6 +27,7 @@ import {
   sanitizeCountryInput,
   normalizePhoneDigits,
 } from "@/lib/form-validation";
+import { computeGuideBookingEndDate, parseDurationDays } from "@/lib/booking-pricing";
 
 interface Guide {
   _id: string;
@@ -83,6 +86,7 @@ function BookingContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDateFromCalendar, setSelectedDateFromCalendar] = useState("");
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   useEffect(() => {
     if (guideParam && !bookingData.guide) {
@@ -117,8 +121,12 @@ function BookingContent() {
   const selectedGuide = guides.find((g) => g._id === bookingData.guide);
   const selectedTrek = treks.find((t) => t._id === bookingData.trek);
 
-  // Parse duration number from string, e.g. "14 days" -> 14
-  const parsedDuration = selectedTrek ? parseInt(selectedTrek.duration.replace(/\D/g, "") || "1") : 1;
+  // Parse duration from selected trek, e.g. "14 days" -> 14
+  const parsedDuration = selectedTrek ? parseDurationDays(selectedTrek.duration) : 1;
+  const guideBookingEndDate =
+    bookingData.startDate && selectedGuide
+      ? computeGuideBookingEndDate(bookingData.startDate, bookingData.trek ? parsedDuration : 1)
+      : "";
 
   // Total Price: Trek Base Price + (Guide Daily Rate * Duration)
   // If no trek selected, assume 1 day for the guide price logic
@@ -185,7 +193,8 @@ function BookingContent() {
           trek: bookingData.trek,
           trekName: selectedTrek?.title,
           startDate: bookingData.startDate,
-          endDate: "", // You could compute end date here based on duration
+          endDate: guideBookingEndDate,
+          duration: bookingData.trek ? parsedDuration : 1,
           groupSize: bookingData.groupSize,
           country: bookingData.country,
           experience: bookingData.experience,
@@ -207,12 +216,8 @@ function BookingContent() {
         throw new Error(err.error || "Booking failed");
       }
 
-      toast({
-        title: "Booking Request Submitted! 🎉",
-        description: "Your request is pending approval. We will contact you shortly.",
-        duration: 5000,
-      });
-      // Optionally reset form or redirect here
+      setShowReviewModal(false);
+      setShowSuccessDialog(true);
       setStep(1);
       setFurthestStepReached(1);
     } catch (error: any) {
@@ -319,15 +324,15 @@ function BookingContent() {
       let cellClass = "h-10 flex items-center justify-center text-sm rounded transition-colors ";
 
       if (isPast) {
-        cellClass += "text-gray-300 bg-gray-50 cursor-not-allowed";
+        cellClass += "text-gray-300 bg-background cursor-not-allowed";
       } else if (isSelected) {
-        cellClass += "bg-emerald-600 text-white font-bold ring-2 ring-emerald-500/20 shadow-md";
+        cellClass += "bg-gold text-white font-bold ring-2 ring-gold/20 shadow-md";
       } else if (isDirectlyBooked) {
         cellClass += "bg-red-100/50 text-red-400 cursor-not-allowed border border-red-100";
       } else if (isBlockedByDuration) {
         cellClass += "bg-amber-100/50 text-amber-600 cursor-not-allowed border border-amber-100";
       } else {
-        cellClass += "bg-emerald-50 text-emerald-700 hover:bg-emerald-200 cursor-pointer font-medium border border-emerald-100";
+        cellClass += "bg-gold/5 text-gold hover:bg-gold/20 cursor-pointer font-medium border border-gold/20";
       }
 
       days.push(
@@ -346,29 +351,29 @@ function BookingContent() {
 
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+        <div className="bg-card rounded-2xl p-6 max-w-md w-full shadow-2xl">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-gray-800">{guide.name}&apos;s Availability</h3>
-            <Button variant="ghost" size="sm" onClick={closeCalendar} className="h-8 w-8 p-0 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">
+            <h3 className="text-lg font-bold text-ivory">{guide.name}&apos;s Availability</h3>
+            <Button variant="ghost" size="sm" onClick={closeCalendar} className="h-8 w-8 p-0 rounded-full bg-secondary text-stone hover:bg-secondary">
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="flex justify-between items-center mb-6 bg-gray-50 p-2 rounded-xl border border-gray-100">
+          <div className="flex justify-between items-center mb-6 bg-background p-2 rounded-xl border border-gold/15">
             <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}>
-              <ChevronLeft className="h-5 w-5 text-gray-600" />
+              <ChevronLeft className="h-5 w-5 text-stone" />
             </Button>
-            <h4 className="font-semibold text-gray-800">
+            <h4 className="font-semibold text-ivory">
               {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
             </h4>
             <Button variant="ghost" size="sm" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}>
-              <ChevronRight className="h-5 w-5 text-gray-600" />
+              <ChevronRight className="h-5 w-5 text-stone" />
             </Button>
           </div>
 
           <div className="grid grid-cols-7 gap-2 mb-2">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="h-8 flex items-center justify-center text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <div key={day} className="h-8 flex items-center justify-center text-xs font-bold text-stone uppercase tracking-wider">
                 {day}
               </div>
             ))}
@@ -376,9 +381,9 @@ function BookingContent() {
 
           <div className="grid grid-cols-7 gap-2 mb-6">{days}</div>
 
-          <div className="grid grid-cols-2 gap-4 text-xs text-gray-600 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-4 text-xs text-stone pt-4 border-t border-gold/15">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-emerald-100 border border-emerald-200 rounded-full"></div>
+              <div className="w-3 h-3 bg-gold/10 border border-gold/30 rounded-full"></div>
               <span>Available</span>
             </div>
             <div className="flex items-center gap-2">
@@ -390,7 +395,7 @@ function BookingContent() {
               <span title="The guide is available on this day, but a trek starting here would overlap with a future busy period">Trek Conflict</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-emerald-600 rounded-full shadow-sm"></div>
+              <div className="w-3 h-3 bg-gold rounded-full shadow-sm"></div>
               <span>Selected</span>
             </div>
           </div>
@@ -404,11 +409,11 @@ function BookingContent() {
 
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[60] p-4 overflow-y-auto">
-        <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
-          <div className="bg-emerald-900 text-white p-8 relative">
+        <div className="bg-card rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-8">
+          <div className="bg-card text-white p-8 relative">
             <h3 className="text-2xl font-bold">Review Your Booking</h3>
-            <p className="text-emerald-200/80 mt-2">Please double check everything before we finalize.</p>
-            <Button variant="ghost" onClick={() => setShowReviewModal(false)} className="absolute top-6 right-6 text-emerald-100 hover:text-white hover:bg-emerald-800 rounded-full h-10 w-10 p-0">
+            <p className="text-stone mt-2">Please double check everything before we finalize.</p>
+            <Button variant="ghost" onClick={() => setShowReviewModal(false)} className="absolute top-6 right-6 text-ivory hover:text-white hover:bg-gold/20 rounded-full h-10 w-10 p-0">
               <X className="h-6 w-6" />
             </Button>
           </div>
@@ -417,74 +422,74 @@ function BookingContent() {
             {/* Trip Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-xs font-bold text-stone uppercase tracking-widest flex items-center gap-2">
                   <MapPin className="h-3 w-3" /> Trip Details
                 </h4>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                      <User className="h-5 w-5 text-emerald-600" />
+                    <div className="w-10 h-10 rounded-xl bg-gold/5 flex items-center justify-center">
+                      <User className="h-5 w-5 text-gold" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Guide</p>
-                      <p className="font-bold text-gray-900">{selectedGuide?.name}</p>
+                      <p className="text-xs text-stone">Guide</p>
+                      <p className="font-bold text-ivory">{selectedGuide?.name}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-emerald-600" />
+                    <div className="w-10 h-10 rounded-xl bg-gold/5 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-gold" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Start Date</p>
-                      <p className="font-bold text-gray-900">{bookingData.startDate}</p>
+                      <p className="text-xs text-stone">Start Date</p>
+                      <p className="font-bold text-ivory">{bookingData.startDate}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-xs font-bold text-stone uppercase tracking-widest flex items-center gap-2">
                   <Shield className="h-3 w-3" /> Service & Price
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-xs text-gray-500">Service Type</p>
-                    <p className="font-bold text-gray-900 capitalize">{bookingData.serviceType.replace("-", " ")}</p>
+                    <p className="text-xs text-stone">Service Type</p>
+                    <p className="font-bold text-ivory capitalize">{bookingData.serviceType.replace("-", " ")}</p>
                   </div>
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                    <p className="text-xs text-emerald-600 font-bold uppercase">Total Amount Due</p>
-                    <p className="text-2xl font-black text-emerald-900">${totalPrice}</p>
+                  <div className="p-3 bg-gold/5 rounded-xl border border-gold/20">
+                    <p className="text-xs text-gold font-bold uppercase">Total Amount Due</p>
+                    <p className="text-2xl font-black text-ivory">${totalPrice}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Personal Details */}
-            <div className="space-y-4 pt-6 border-t border-gray-100">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            <div className="space-y-4 pt-6 border-t border-gold/15">
+              <h4 className="text-xs font-bold text-stone uppercase tracking-widest flex items-center gap-2">
                 <Users className="h-3 w-3" /> Personal Information
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                 <div>
-                  <p className="text-xs text-gray-500">Full Name</p>
-                  <p className="font-semibold text-gray-900">{bookingData.name}</p>
+                  <p className="text-xs text-stone">Full Name</p>
+                  <p className="font-semibold text-ivory">{bookingData.name}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Email</p>
-                  <p className="font-semibold text-gray-900 truncate">{bookingData.email}</p>
+                  <p className="text-xs text-stone">Email</p>
+                  <p className="font-semibold text-ivory truncate">{bookingData.email}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <p className="font-semibold text-gray-900">{bookingData.phone}</p>
+                  <p className="text-xs text-stone">Phone</p>
+                  <p className="font-semibold text-ivory">{bookingData.phone}</p>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-4 pt-6">
-              <Button variant="outline" onClick={() => setShowReviewModal(false)} className="flex-1 h-14 rounded-2xl font-bold border-gray-200">
+              <Button variant="outline" onClick={() => setShowReviewModal(false)} className="flex-1 h-14 rounded-2xl font-bold border-gold/15">
                 Wait, let me edit
               </Button>
-              <Button onClick={() => { setShowReviewModal(false); handleSubmit(); }} disabled={isSubmitting} className="flex-1 h-14 rounded-2xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20">
+              <Button onClick={() => { setShowReviewModal(false); handleSubmit(); }} disabled={isSubmitting} className="flex-1 h-14 rounded-2xl font-bold bg-gold hover:bg-gold/90 text-white shadow-xl shadow-none">
                 {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle className="h-5 w-5 mr-2" />}
                 Submit Booking
               </Button>
@@ -500,7 +505,7 @@ function BookingContent() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <div className="flex-grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-gold" />
         </div>
         <Footer />
       </div>
@@ -508,30 +513,30 @@ function BookingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
-      <section className="py-16 bg-gradient-to-br from-emerald-900 to-teal-900">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Book Your Trek</h1>
-          <p className="text-lg text-emerald-100/80">Secure your spot on an unforgettable Himalayan adventure.</p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Reserve"
+        title="Book your expedition"
+        subtitle="Select a private guide, dates, and party size. Our concierge confirms within 24 hours."
+        compact
+      />
 
       {/* Selected Guide Quick View */}
       {selectedGuide && step > 1 && (
-        <section className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <section className="bg-card border-b border-gold/15 sticky top-20 z-10">
           <div className="max-w-4xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src={selectedGuide.profileImage || "/placeholder.svg"} alt={selectedGuide.name} className="w-10 h-10 rounded-full object-cover" />
                 <div>
-                  <p className="font-semibold text-gray-800 text-sm">{selectedGuide.name}</p>
-                  <p className="text-xs text-gray-500">${selectedGuide.price}/day</p>
+                  <p className="font-semibold text-ivory text-sm">{selectedGuide.name}</p>
+                  <p className="text-xs text-stone">${selectedGuide.price}/day</p>
                 </div>
               </div>
               <div className="flex flex-col text-right">
-                <span className="text-sm font-bold text-emerald-600">Total: ${totalPrice}</span>
+                <span className="text-sm font-bold text-gold">Total: ${totalPrice}</span>
               </div>
             </div>
           </div>
@@ -539,7 +544,7 @@ function BookingContent() {
       )}
 
       {/* Progress */}
-      <section className="py-6 bg-white border-b">
+      <section className="py-6 bg-card border-b">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center justify-center gap-2 sm:gap-4">
             {[
@@ -572,14 +577,14 @@ function BookingContent() {
                       }, 100);
                     }
                   }}
-                  className={`flex items-center gap-2 transition-opacity select-none ${headingClickable ? "cursor-pointer hover:opacity-80" : "cursor-default"} ${step >= s.num ? "text-emerald-600" : "text-gray-400"}`}
+                  className={`flex items-center gap-2 transition-opacity select-none ${headingClickable ? "cursor-pointer hover:opacity-80" : "cursor-default"} ${step >= s.num ? "text-gold" : "text-stone"}`}
                 >
-                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${step >= s.num ? "bg-emerald-600 text-white" : "bg-gray-100"}`}>
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${step >= s.num ? "bg-gold text-white" : "bg-secondary"}`}>
                     {s.num}
                   </div>
                   <span className="hidden sm:inline font-medium text-sm">{s.label}</span>
                 </div>
-                {idx < 3 && <div className={`w-8 sm:w-12 h-0.5 mx-2 sm:mx-4 ${step > s.num ? "bg-emerald-600" : "bg-gray-200"}`} />}
+                {idx < 3 && <div className={`w-8 sm:w-12 h-0.5 mx-2 sm:mx-4 ${step > s.num ? "bg-gold" : "bg-secondary"}`} />}
               </div>
             );
             })}
@@ -592,8 +597,8 @@ function BookingContent() {
           
           {step === 1 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <User className="h-6 w-6 text-emerald-600" /> Select Your Guide
+              <h2 className="text-2xl font-bold text-ivory flex items-center gap-2">
+                <User className="h-6 w-6 text-gold" /> Select Your Guide
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {guides.map((guide) => {
@@ -603,17 +608,17 @@ function BookingContent() {
                       onClick={() => handleGuideChange(guide._id)}
                       className={`relative border-2 rounded-2xl p-4 transition-all duration-200 cursor-pointer ${
                         bookingData.guide === guide._id
-                          ? "border-emerald-500 bg-emerald-50/50 shadow-md ring-2 ring-emerald-500/20"
-                          : "border-gray-100 bg-white hover:border-emerald-200 hover:shadow-sm"
+                          ? "border-gold bg-gold/5 shadow-md ring-2 ring-gold/20"
+                          : "border-gold/15 bg-card hover:border-gold/40 hover:shadow-sm"
                       }`}
                     >
                       <div className="flex gap-4">
                         <img src={guide.profileImage || "/placeholder.svg"} alt={guide.name} className="w-16 h-16 rounded-full object-cover shadow-sm" />
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-gray-900 truncate">{guide.name}</h3>
+                          <h3 className="font-bold text-ivory truncate">{guide.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-emerald-600 font-semibold">${guide.price}/day</span>
-                            <span className="text-xs text-gray-500">• {guide.yearsExperience} yrs exp</span>
+                            <span className="text-gold font-semibold">${guide.price}/day</span>
+                            <span className="text-xs text-stone">• {guide.yearsExperience} yrs exp</span>
                           </div>
                           <div className="flex flex-col gap-2 mt-2">
                             {guide.availabilityStatus !== "available" && (
@@ -622,7 +627,7 @@ function BookingContent() {
                                 {guide.unavailableFrom && ` (${new Date(guide.unavailableFrom).toLocaleDateString()} - ${new Date(guide.unavailableTo!).toLocaleDateString()})`}
                               </span>
                             )}
-                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openCalendar(guide._id); }} className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100 bg-emerald-50 w-fit">
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openCalendar(guide._id); }} className="h-7 px-2 text-xs text-gold hover:text-gold hover:bg-gold/10 bg-gold/5 w-fit">
                               <Calendar className="h-3 w-3 mr-1" /> View Availability
                             </Button>
                           </div>
@@ -633,23 +638,23 @@ function BookingContent() {
                 })}
               </div>
               <div className="flex justify-end mt-8">
-                <Button onClick={handleNext} disabled={!bookingData.guide} className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-6 rounded-xl font-bold shadow-lg shadow-emerald-700/20">Next Step</Button>
+                <Button onClick={handleNext} disabled={!bookingData.guide} className="px-8 py-6">Next Step</Button>
               </div>
             </div>
           )}
 
           {step === 2 && (
             <Card className="border-0 shadow-xl rounded-2xl overflow-hidden">
-              <CardHeader className="bg-emerald-900 text-white px-8 py-6">
+              <CardHeader className="bg-card text-white px-8 py-6">
                 <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Calendar className="h-6 w-6 text-emerald-400" /> Trek & Dates
+                  <Calendar className="h-6 w-6 text-gold" /> Trek & Dates
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-6 bg-white">
+              <CardContent className="p-8 space-y-6 bg-card">
                 <div>
-                  <Label className="text-gray-700 font-semibold mb-2 block">Choose Service Type *</Label>
+                  <Label className="text-ivory font-semibold mb-2 block">Choose Service Type *</Label>
                   <Select onValueChange={(val) => setBookingData({ ...bookingData, serviceType: val })} value={bookingData.serviceType}>
-                    <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12"><SelectValue placeholder="Select a service" /></SelectTrigger>
+                    <SelectTrigger className="bg-background border-gold/15 rounded-xl h-12"><SelectValue placeholder="Select a service" /></SelectTrigger>
                     <SelectContent>
                       {serviceTypes.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                     </SelectContent>
@@ -657,9 +662,24 @@ function BookingContent() {
                 </div>
 
                 <div>
-                  <Label className="text-gray-700 font-semibold mb-2 block">Choose Trek Package (Optional)</Label>
-                  <Select onValueChange={(val) => setBookingData({ ...bookingData, trek: val })} value={bookingData.trek}>
-                    <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12">
+                  <Label className="text-ivory font-semibold mb-2 block">Choose Trek Package (Optional)</Label>
+                  <Select
+                    onValueChange={(val) => {
+                      const newTrek = treks.find((t) => t._id === val);
+                      const newDuration = newTrek ? parseDurationDays(newTrek.duration) : 1;
+                      const keepStartDate =
+                        bookingData.startDate &&
+                        bookingData.guide &&
+                        isStartDateValid(bookingData.startDate, bookingData.guide, newDuration);
+                      setBookingData({
+                        ...bookingData,
+                        trek: val,
+                        startDate: keepStartDate ? bookingData.startDate : "",
+                      });
+                    }}
+                    value={bookingData.trek}
+                  >
+                    <SelectTrigger className="bg-background border-gold/15 rounded-xl h-12">
                       <SelectValue placeholder={bookingData.startDate ? "Select an available trek" : "Select start date first"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -705,24 +725,24 @@ function BookingContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Start Date *</Label>
+                    <Label className="text-ivory font-semibold mb-2 block">Start Date *</Label>
                     <div 
                       onClick={() => openCalendar(bookingData.guide)}
-                      className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/30 transition-all h-12"
+                      className="flex items-center justify-between px-4 py-3 bg-background border border-gold/15 rounded-xl cursor-pointer hover:border-gold hover:bg-gold/5 transition-all h-12"
                     >
-                      <span className={bookingData.startDate ? "text-gray-900 font-medium" : "text-gray-400"}>
+                      <span className={bookingData.startDate ? "text-ivory font-medium" : "text-stone"}>
                         {bookingData.startDate || "Select date from calendar"}
                       </span>
-                      <Calendar className="h-5 w-5 text-gray-400" />
+                      <Calendar className="h-5 w-5 text-stone" />
                     </div>
                     {bookingData.startDate && (
-                      <p className="text-xs font-semibold text-emerald-600 mt-2 flex items-center gap-1"><CheckCircle className="h-3 w-3"/> Selected from availability calendar</p>
+                      <p className="text-xs font-semibold text-gold mt-2 flex items-center gap-1"><CheckCircle className="h-3 w-3"/> Selected from availability calendar</p>
                     )}
                   </div>
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Group Size *</Label>
+                    <Label className="text-ivory font-semibold mb-2 block">Group Size *</Label>
                     <Select onValueChange={(val) => setBookingData({ ...bookingData, groupSize: val })} value={bookingData.groupSize}>
-                      <SelectTrigger className="bg-gray-50 border-gray-200 rounded-xl h-12"><SelectValue placeholder="Number of trekkers" /></SelectTrigger>
+                      <SelectTrigger className="bg-background border-gold/15 rounded-xl h-12"><SelectValue placeholder="Number of trekkers" /></SelectTrigger>
                       <SelectContent>
                         {[1,2,3,4,5,6,7,8].map(n => <SelectItem key={n} value={n.toString()}>{n} Person{n>1?'s':''}</SelectItem>)}
                       </SelectContent>
@@ -731,25 +751,25 @@ function BookingContent() {
                 </div>
 
                 {selectedTrek && (
-                  <div className="bg-emerald-50 rounded-xl p-6 mt-6 border border-emerald-100">
-                    <h4 className="font-bold text-emerald-800 mb-3 text-lg">Trip Summary</h4>
-                    <div className="space-y-2 text-emerald-900/80">
-                      <p className="flex justify-between"><span>Trek:</span> <span className="font-semibold text-emerald-900">{selectedTrek.title}</span></p>
-                      <p className="flex justify-between"><span>Duration:</span> <span className="font-semibold text-emerald-900">{selectedTrek.duration}</span></p>
-                      <p className="flex justify-between"><span>Base Price:</span> <span className="font-semibold text-emerald-900">${selectedTrek.price}</span></p>
+                  <div className="bg-gold/5 rounded-xl p-6 mt-6 border border-gold/20">
+                    <h4 className="font-bold text-gold mb-3 text-lg">Trip Summary</h4>
+                    <div className="space-y-2 text-stone">
+                      <p className="flex justify-between"><span>Trek:</span> <span className="font-semibold text-ivory">{selectedTrek.title}</span></p>
+                      <p className="flex justify-between"><span>Duration:</span> <span className="font-semibold text-ivory">{selectedTrek.duration}</span></p>
+                      <p className="flex justify-between"><span>Base Price:</span> <span className="font-semibold text-ivory">${selectedTrek.price}</span></p>
                       {bookingData.groupSize && (
-                        <p className="flex justify-between pt-2 border-t border-emerald-200 mt-2">
-                          <span className="font-bold text-emerald-800">Total Price ({bookingData.groupSize} Trekkers):</span> 
-                          <span className="font-bold text-emerald-800">${selectedTrek.price * parseInt(bookingData.groupSize)}</span>
+                        <p className="flex justify-between pt-2 border-t border-gold/30 mt-2">
+                          <span className="font-bold text-gold">Total Price ({bookingData.groupSize} Trekkers):</span> 
+                          <span className="font-bold text-gold">${selectedTrek.price * parseInt(bookingData.groupSize)}</span>
                         </p>
                       )}
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+                <div className="flex justify-between mt-8 pt-6 border-t border-gold/15">
                   <Button variant="outline" onClick={handlePrevious} className="rounded-xl h-12 px-6">Back</Button>
-                  <Button onClick={handleNext} disabled={!bookingData.serviceType || !bookingData.startDate || !bookingData.groupSize} className="bg-emerald-700 hover:bg-emerald-800 rounded-xl h-12 px-8 font-bold text-white">Next Step</Button>
+                  <Button onClick={handleNext} disabled={!bookingData.serviceType || !bookingData.startDate || !bookingData.groupSize} className="h-12 px-8">Next Step</Button>
                 </div>
               </CardContent>
             </Card>
@@ -757,17 +777,17 @@ function BookingContent() {
 
           {step === 3 && (
             <Card className="border-0 shadow-xl rounded-2xl overflow-hidden">
-              <CardHeader className="bg-emerald-900 text-white px-8 py-6">
+              <CardHeader className="bg-card text-white px-8 py-6">
                 <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Users className="h-6 w-6 text-emerald-400" /> Personal Details
+                  <Users className="h-6 w-6 text-gold" /> Personal Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8 space-y-6 bg-white">
+              <CardContent className="p-8 space-y-6 bg-card">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Full Name *</Label>
+                    <Label className="text-ivory font-semibold mb-2 block">Full Name *</Label>
                     <Input
-                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      className="bg-background border-gold/15 rounded-xl h-12"
                       value={bookingData.name}
                       onChange={(e) =>
                         setBookingData({ ...bookingData, name: sanitizeFullNameInput(e.target.value) })
@@ -777,13 +797,13 @@ function BookingContent() {
                       required
                       aria-invalid={bookingData.name.length > 0 && !isFullNameNoSpecial(bookingData.name)}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Letters and spaces only (no numbers or symbols).</p>
+                    <p className="text-xs text-stone mt-1">Letters and spaces only (no numbers or symbols).</p>
                   </div>
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Email Address *</Label>
+                    <Label className="text-ivory font-semibold mb-2 block">Email Address *</Label>
                     <Input
                       type="email"
-                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      className="bg-background border-gold/15 rounded-xl h-12"
                       value={bookingData.email}
                       onChange={(e) => setBookingData({ ...bookingData, email: e.target.value.trimStart() })}
                       maxLength={254}
@@ -793,9 +813,9 @@ function BookingContent() {
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Phone Number * (10 digits)</Label>
+                    <Label className="text-ivory font-semibold mb-2 block">Phone Number * (10 digits)</Label>
                     <Input
-                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      className="bg-background border-gold/15 rounded-xl h-12"
                       value={bookingData.phone}
                       onChange={(e) =>
                         setBookingData({ ...bookingData, phone: normalizePhoneDigits(e.target.value) })
@@ -809,9 +829,9 @@ function BookingContent() {
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 font-semibold mb-2 block">Country *</Label>
+                    <Label className="text-ivory font-semibold mb-2 block">Country *</Label>
                     <Input
-                      className="bg-gray-50 border-gray-200 rounded-xl h-12"
+                      className="bg-background border-gold/15 rounded-xl h-12"
                       value={bookingData.country}
                       onChange={(e) =>
                         setBookingData({ ...bookingData, country: sanitizeCountryInput(e.target.value) })
@@ -821,50 +841,50 @@ function BookingContent() {
                       required
                       aria-invalid={bookingData.country.length > 0 && !isCountryName(bookingData.country)}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Letters and spaces only.</p>
+                    <p className="text-xs text-stone mt-1">Letters and spaces only.</p>
                   </div>
                 </div>
 
-                <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+                <div className="flex justify-between mt-8 pt-6 border-t border-gold/15">
                   <Button variant="outline" onClick={handlePrevious} className="rounded-xl h-12 px-6">Back</Button>
-                  <Button onClick={handleNext} disabled={!personalDetailsValid} className="bg-emerald-700 hover:bg-emerald-800 rounded-xl h-12 px-8 font-bold text-white">Review & Confirm</Button>
+                  <Button onClick={handleNext} disabled={!personalDetailsValid} className="h-12 px-8">Review & Confirm</Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
           {step === 4 && (
-            <Card className="border-0 shadow-xl rounded-2xl overflow-hidden border-t-8 border-t-emerald-600">
-              <CardHeader className="bg-white px-8 pt-8 pb-4">
-                <CardTitle className="flex items-center gap-2 text-2xl text-gray-800">
-                  <Shield className="h-6 w-6 text-emerald-600" /> Confirm Booking
+            <Card className="overflow-hidden border border-gold/20 border-t-4 border-t-gold">
+              <CardHeader className="bg-card px-8 pt-8 pb-4">
+                <CardTitle className="flex items-center gap-2 text-2xl text-ivory">
+                  <Shield className="h-6 w-6 text-gold" /> Confirm Booking
                 </CardTitle>
-                <p className="text-gray-500 mt-2">Please review your booking details before submitting.</p>
+                <p className="text-stone mt-2">Please review your booking details before submitting.</p>
               </CardHeader>
-              <CardContent className="p-8 bg-gray-50/50">
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6">
-                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-800 text-lg">Total Price</h3>
-                    <span className="text-3xl font-extrabold text-emerald-600">${totalPrice}</span>
+              <CardContent className="p-8 bg-background/50">
+                <div className="bg-card rounded-2xl p-6 border border-gold/15 shadow-sm mb-6">
+                  <div className="flex justify-between items-center mb-6 pb-4 border-b border-gold/15">
+                    <h3 className="font-bold text-ivory text-lg">Total Price</h3>
+                    <span className="text-3xl font-extrabold text-gold">${totalPrice}</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-sm">
                     <div>
-                      <p className="text-gray-500 font-medium mb-1">Assigned Guide</p>
-                      <p className="font-bold text-gray-800">{selectedGuide?.name}</p>
+                      <p className="text-stone font-medium mb-1">Assigned Guide</p>
+                      <p className="font-bold text-ivory">{selectedGuide?.name}</p>
                     </div>
                     {selectedTrek && (
                       <div>
-                        <p className="text-gray-500 font-medium mb-1">Trek Route</p>
-                        <p className="font-bold text-gray-800">{selectedTrek.title}</p>
+                        <p className="text-stone font-medium mb-1">Trek Route</p>
+                        <p className="font-bold text-ivory">{selectedTrek.title}</p>
                       </div>
                     )}
                     <div>
-                      <p className="text-gray-500 font-medium mb-1">Start Date</p>
-                      <p className="font-bold text-gray-800">{bookingData.startDate}</p>
+                      <p className="text-stone font-medium mb-1">Start Date</p>
+                      <p className="font-bold text-ivory">{bookingData.startDate}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 font-medium mb-1">Group Size</p>
-                      <p className="font-bold text-gray-800">{bookingData.groupSize} Person(s)</p>
+                      <p className="text-stone font-medium mb-1">Group Size</p>
+                      <p className="font-bold text-ivory">{bookingData.groupSize} Person(s)</p>
                     </div>
                   </div>
                 </div>
@@ -877,8 +897,8 @@ function BookingContent() {
                 </div>
 
                 <div className="flex justify-between pt-6">
-                  <Button variant="outline" onClick={handlePrevious} className="rounded-xl h-12 px-6 bg-white">Back</Button>
-                  <Button onClick={() => setShowReviewModal(true)} disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 rounded-xl h-12 px-8 font-bold text-white shadow-lg shadow-emerald-600/30">
+                  <Button variant="outline" onClick={handlePrevious} className="rounded-xl h-12 px-6 bg-card">Back</Button>
+                  <Button onClick={() => setShowReviewModal(true)} disabled={isSubmitting} className="h-12 px-8">
                     <CheckCircle className="h-5 w-5 mr-2" />
                     Confirm Booking
                   </Button>
@@ -893,6 +913,13 @@ function BookingContent() {
       {showCalendar && renderCalendar()}
       {showReviewModal && renderReviewModal()}
 
+      <BookingSuccessDialog
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        title="Booking Request Submitted!"
+        description="Your request is pending approval. We will contact you shortly."
+      />
+
       <Footer />
     </div>
   );
@@ -904,7 +931,7 @@ export default function BookingPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <div className="flex-grow flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-gold" />
         </div>
         <Footer />
       </div>

@@ -9,7 +9,13 @@ import {
   isTenDigitPhone,
   isFullNameNoSpecial,
 } from "@/lib/form-validation";
+import {
+  rentalDaysBetween,
+  dateRangeIncludesBlocked,
+  isWithinDedupWindow,
+} from "@/lib/booking-pricing";
 import { queueVehicleBookingConfirmation } from "@/lib/booking-confirmation-email";
+import { queueAdminBookingAlert } from "@/lib/site-notifications";
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,7 +40,6 @@ export async function POST(req: NextRequest) {
       vehicleId,
       startDate,
       endDate,
-      pricePerDay,
       customerName,
       customerEmail,
       customerPhone,
@@ -46,7 +51,6 @@ export async function POST(req: NextRequest) {
       !vehicleId ||
       !startDate ||
       !endDate ||
-      pricePerDay == null ||
       !customerName ||
       !customerEmail ||
       !customerPhone ||
@@ -71,17 +75,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
     }
 
-    // Calculate total price
-    const start = new Date(startDate).getTime();
-    const end = new Date(endDate).getTime();
-    const days = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
-    const totalPrice = Number(pricePerDay) * days;
+    if (vehicle.soldOutDates?.length && dateRangeIncludesBlocked(startDate, endDate, vehicle.soldOutDates)) {
+      return NextResponse.json(
+        { error: "One or more selected dates are unavailable for this vehicle." },
+        { status: 400 }
+      );
+    }
+
+    let days: number;
+    try {
+      days = rentalDaysBetween(startDate, endDate);
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
+
+    const normalizedEmail = String(customerEmail).trim().toLowerCase();
+    const recentDuplicate = await VehicleBooking.findOne({
+      vehicleId,
+      customerEmail: normalizedEmail,
+      startDate,
+      endDate,
+      status: { $ne: "cancelled" },
+    }).sort({ createdAt: -1 });
+
+    if (recentDuplicate && isWithinDedupWindow(recentDuplicate.createdAt)) {
+      return NextResponse.json(
+        { error: "A similar booking was just submitted. Please wait before trying again." },
+        { status: 409 }
+      );
+    }
+
+    const totalPrice = Math.round(vehicle.pricePerDay * days * 100) / 100;
 
     const booking = await VehicleBooking.create({
       vehicleId,
-      vehicleName: String(body.vehicleName || vehicle.name),
+      vehicleName: vehicle.name,
       customerName: String(customerName).trim(),
-      customerEmail: String(customerEmail).trim().toLowerCase(),
+      customerEmail: normalizedEmail,
       customerPhone: String(customerPhone).replace(/\D/g, "").slice(0, 10),
       pickupLocation: String(pickupLocation).trim(),
       dropOffLocation: String(dropOffLocation).trim(),
@@ -100,6 +130,20 @@ export async function POST(req: NextRequest) {
       startDate: String(startDate),
       endDate: String(endDate),
       totalPrice: booking.totalPrice,
+    });
+
+    queueAdminBookingAlert({
+      type: "Vehicle booking",
+      customerName: booking.customerName,
+      customerEmail: booking.customerEmail,
+      customerPhone: booking.customerPhone,
+      totalPrice: booking.totalPrice,
+      summary: [
+        { label: "Vehicle", value: booking.vehicleName },
+        { label: "Pickup", value: booking.pickupLocation },
+        { label: "Drop-off", value: booking.dropOffLocation },
+        { label: "Dates", value: `${startDate} → ${endDate}` },
+      ],
     });
 
     return NextResponse.json(booking, { status: 201 });

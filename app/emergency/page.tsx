@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import Header from "@/components/header"
+import Footer from "@/components/footer"
 
 export default function EmergencyPage() {
   const [sosActivated, setSosActivated] = useState(false)
@@ -70,37 +72,10 @@ export default function EmergencyPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
-              </Link>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Home
-                </Link>
-                <Link href="/treks" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Treks
-                </Link>
-                <Link href="/emergency" className="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Emergency
-                </Link>
-                <Link href="/contact" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Contact
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <Header />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-28">
         {/* SOS Alert */}
         {sosActivated && (
           <Alert className="mb-8 border-red-200 bg-red-50">
@@ -123,7 +98,7 @@ export default function EmergencyPage() {
               <AlertTriangle className="h-8 w-8" />
               Emergency SOS
             </CardTitle>
-            <p className="text-gray-600">
+            <p className="text-stone">
               Press this button only in case of real emergency. It will immediately alert your guide and emergency
               services.
             </p>
@@ -147,7 +122,7 @@ export default function EmergencyPage() {
                 </>
               )}
             </Button>
-            <p className="text-sm text-gray-500 mt-4">
+            <p className="text-sm text-stone mt-4">
               This will share your GPS location and send alerts to all emergency contacts
             </p>
           </CardContent>
@@ -157,10 +132,10 @@ export default function EmergencyPage() {
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Phone className="h-6 w-6 text-green-600" />
+              <Phone className="h-6 w-6 text-gold" />
               Emergency Contacts
             </CardTitle>
-            <p className="text-gray-600">Important numbers to call in case of emergency</p>
+            <p className="text-stone">Important numbers to call in case of emergency</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -169,7 +144,7 @@ export default function EmergencyPage() {
                   key={index}
                   className={`p-4 rounded-lg border ${
                     contact.priority === "primary"
-                      ? "border-green-200 bg-green-50"
+                      ? "border-gold/30 bg-gold/5"
                       : contact.priority === "emergency"
                         ? "border-red-200 bg-red-50"
                         : "border-blue-200 bg-blue-50"
@@ -189,7 +164,7 @@ export default function EmergencyPage() {
                         {contact.whatsapp && (
                           <a
                             href={`https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, "")}`}
-                            className="text-green-600 hover:text-green-800 text-sm"
+                            className="text-gold hover:text-gold text-sm"
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -197,7 +172,7 @@ export default function EmergencyPage() {
                           </a>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">Available: {contact.available}</p>
+                      <p className="text-sm text-stone mt-1">Available: {contact.available}</p>
                     </div>
                     <Badge
                       variant={
@@ -266,7 +241,7 @@ export default function EmergencyPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-green-600" />
+              <Shield className="h-6 w-6 text-gold" />
               Safety Information
             </CardTitle>
           </CardHeader>
@@ -338,6 +313,7 @@ export default function EmergencyPage() {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   )
 }

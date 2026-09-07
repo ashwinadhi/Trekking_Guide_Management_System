@@ -1,53 +1,56 @@
 import { NextResponse, NextRequest } from "next/server";
 import connectDB from "@/lib/db";
 import { CartItem } from "@/models/CartItem";
+import { Equipment } from "@/models/Equipment";
 
 /**
  * POST /api/cart
  * Saves a single cart item to MongoDB (called when user clicks "Add to Cart").
  * Uses sessionId from the request body to identify the guest session.
+ * Prices are always taken from the equipment catalog — client values are ignored.
  */
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
     const body = await req.json();
 
-    // ── Validate required fields ─────────────────────────────────────
-    const { sessionId, itemId, name, price } = body;
-    if (!sessionId || !itemId || !name || price === undefined) {
+    const { sessionId, itemId, name } = body;
+    if (!sessionId || !itemId || !name) {
       return NextResponse.json(
-        { error: "Missing required fields: sessionId, itemId, name, price" },
+        { error: "Missing required fields: sessionId, itemId, name" },
         { status: 400 }
       );
     }
 
-    if (typeof price !== "number" || price < 0) {
-      return NextResponse.json(
-        { error: "price must be a non-negative number" },
-        { status: 400 }
-      );
+    const equipment = await Equipment.findById(itemId);
+    if (!equipment) {
+      return NextResponse.json({ error: "Equipment not found" }, { status: 404 });
     }
 
-    // ── Upsert: if item already exists for this session, increment qty ─
+    const price = equipment.price;
+    const quantity = Math.max(1, parseInt(String(body.quantity ?? 1), 10) || 1);
+    const rentalDays = Math.max(1, parseInt(String(body.rentalDays ?? 1), 10) || 1);
+
     const existing = await CartItem.findOne({ sessionId, itemId });
 
     if (existing) {
       existing.quantity = (existing.quantity || 1) + 1;
+      existing.price = price;
+      existing.name = equipment.title;
       await existing.save();
       return NextResponse.json(existing, { status: 200 });
     }
 
-    // ── Create new cart item ──────────────────────────────────────────
     const cartItem = await CartItem.create({
       sessionId,
       itemId,
       itemType: body.itemType || "equipment",
-      name,
+      name: equipment.title,
       price,
-      quantity: body.quantity ?? 1,
-      rentalDays: body.rentalDays ?? 1,
-      image: body.image || "",
-      category: body.category || "",
+      quantity,
+      rentalDays,
+      image: body.image || equipment.image || "",
+      category: body.category || equipment.category || "",
     });
 
     return NextResponse.json(cartItem, { status: 201 });

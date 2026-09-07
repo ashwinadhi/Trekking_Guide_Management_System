@@ -72,7 +72,7 @@ export default function AdminInquiriesPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+          <Loader2 className="h-10 w-10 animate-spin text-gold" />
           <p className="text-gray-400 text-lg font-medium">Loading inquiries...</p>
         </div>
       </div>
@@ -84,7 +84,7 @@ export default function AdminInquiriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+          <h1 className="font-display text-3xl text-ivory">
             Inquiries
           </h1>
           <p className="text-gray-400 mt-1">Manage contact form submissions</p>
@@ -126,7 +126,7 @@ export default function AdminInquiriesPage() {
                           <CheckCircle className="h-3.5 w-3.5" /> Read
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gold/10 text-gold border border-gold/20">
                           <AlertCircle className="h-3.5 w-3.5" /> New
                         </span>
                       )}
@@ -139,7 +139,7 @@ export default function AdminInquiriesPage() {
                         </div>
                         <div className="flex items-center gap-2 text-gray-400">
                           <Mail className="h-4 w-4 text-gray-500" />
-                          <a href={`mailto:${inquiry.email}`} className="hover:text-emerald-400 transition-colors">
+                          <a href={`mailto:${inquiry.email}`} className="hover:text-gold transition-colors">
                             {inquiry.email}
                           </a>
                         </div>
@@ -169,7 +169,7 @@ export default function AdminInquiriesPage() {
                           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
                             inquiry.isRead
                               ? "text-gray-400 bg-gray-800 hover:bg-gray-700 border border-gray-700"
-                              : "text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20"
+                              : "text-gold bg-gold/10 hover:bg-gold/20 border border-gold/20"
                           }`}
                         >
                           {actionLoading === `read-${inquiry._id}` ? (

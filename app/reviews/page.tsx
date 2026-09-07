@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { Star, MapPin, Calendar, Quote, Loader2, Send, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import { isReviewDescription } from "@/lib/form-validation";
+import { isReviewDescription, isFullNameNoSpecial, sanitizeFullNameInput } from "@/lib/form-validation";
 
 interface Review {
   _id: string;
@@ -41,6 +41,7 @@ export default function ReviewsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
+    userName: "",
     description: "",
     rating: 5,
     slug: "general",
@@ -69,12 +70,24 @@ export default function ReviewsPage() {
       });
       return;
     }
+    const reviewerName = session?.user?.name || formData.userName;
+    if (!reviewerName || !isFullNameNoSpecial(reviewerName)) {
+      toast({
+        title: "Enter your name",
+        description: "Use letters and spaces only (2–100 characters).",
+        variant: "destructive",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          userName: reviewerName,
+        }),
       });
 
       if (res.ok) {
@@ -82,7 +95,7 @@ export default function ReviewsPage() {
           title: "Success", 
           description: "Thank you for your feedback, Ashwin and the team appreciate it!" 
         });
-        setFormData({ description: "", rating: 5, slug: "general" });
+        setFormData({ userName: "", description: "", rating: 5, slug: "general" });
         setShowForm(false);
         fetchReviews();
       } else {
@@ -133,98 +146,59 @@ export default function ReviewsPage() {
     : 5;
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold text-green-700">
-                Technie Trek Ashwin
-              </Link>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Home
-                </Link>
-                <Link href="/about" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  About Me
-                </Link>
-                <Link href="/treks" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Trek Packages
-                </Link>
-                <Link href="/reviews" className="text-gray-900 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Reviews
-                </Link>
-                <Link href="/contact" className="text-gray-700 hover:text-green-700 px-3 py-2 text-sm font-medium">
-                  Contact
-                </Link>
-                <Link href="/booking">
-                  <Button className="bg-green-700 hover:bg-green-800">Book Now</Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <Header />
 
       {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-green-50 to-blue-50">
+      <section className="pt-28 pb-16">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Client Reviews</h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-ivory mb-6">Client Reviews</h1>
+          <p className="text-xl text-stone mb-8">
             Read what international trekkers say about their experiences with me. These authentic reviews reflect my
             commitment to safety, professionalism, and unforgettable adventures.
           </p>
 
           {/* Rating Summary */}
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
+          <div className="bg-card rounded-lg shadow-lg p-8 max-w-md mx-auto">
             <div className="text-center">
-              <div className="text-4xl font-bold text-green-700 mb-2">{averageRating.toFixed(1)}</div>
+              <div className="text-4xl font-bold text-gold mb-2">{averageRating.toFixed(1)}</div>
               <div className="flex justify-center mb-2">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className={`h-6 w-6 ${i < Math.round(averageRating) ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
                 ))}
               </div>
-              <p className="text-gray-600">Based on {allReviews.length} verified reviews</p>
+              <p className="text-stone">Based on {allReviews.length} verified reviews</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Review Submission Area */}
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-card">
         <div className="max-w-3xl mx-auto px-4">
-          {!session ? (
-            <div className="p-8 rounded-2xl bg-gray-50 border border-gray-200 text-center">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Share Your Adventure</h3>
-              <p className="text-gray-600 mb-6">Join our community and help others discover the magic of the Himalayas.</p>
-              <Button 
-                onClick={() => signIn("google")}
-                className="bg-green-700 hover:bg-green-800 text-white rounded-xl px-8"
-              >
-                Sign in with Google to Review
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-6">
+          <div className="space-y-6">
               {!showForm ? (
                 <Button 
                   onClick={() => setShowForm(true)}
-                  className="w-full h-14 rounded-xl bg-green-700 hover:bg-green-800 text-white font-bold flex items-center justify-center gap-2"
+                  className="w-full h-14 rounded-xl bg-gold hover:bg-gold/90 text-white font-bold flex items-center justify-center gap-2"
                 >
                   <Plus size={20} /> Write Your Review
                 </Button>
               ) : (
-                <Card className="border-green-200 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
+                <Card className="border-gold/30 shadow-md animate-in fade-in slide-in-from-top-4 duration-500">
                   <CardContent className="p-8">
                     <div className="flex justify-between items-center mb-6">
                       <div className="flex items-center gap-4">
-                        <img src={session.user?.image || `https://ui-avatars.com/api/?name=${session.user?.name}`} alt="" className="w-12 h-12 rounded-full border-2 border-green-500" />
+                        {session?.user?.image ? (
+                          <img src={session.user.image} alt="" className="w-12 h-12 rounded-full border-2 border-gold" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full border-2 border-gold bg-gold/5 flex items-center justify-center text-gold font-bold">
+                            {(session?.user?.name || formData.userName || "?")[0]?.toUpperCase()}
+                          </div>
+                        )}
                         <div>
-                          <h4 className="text-gray-900 font-bold">{session.user?.name}</h4>
-                          <p className="text-xs text-gray-500">Submit your feedback</p>
+                          <h4 className="text-ivory font-bold">{session?.user?.name || "Share your feedback"}</h4>
+                          <p className="text-xs text-stone">Help others discover the Himalayas</p>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => setShowForm(false)} className="rounded-full">
@@ -233,12 +207,25 @@ export default function ReviewsPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                      {!session && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold">Your Name *</Label>
+                          <input
+                            required
+                            value={formData.userName}
+                            onChange={(e) => setFormData({ ...formData, userName: sanitizeFullNameInput(e.target.value) })}
+                            className="w-full bg-card border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-gold/50"
+                            placeholder="Your full name"
+                            maxLength={100}
+                          />
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label className="text-sm font-semibold">Which adventure are you reviewing?</Label>
                         <select 
                           value={formData.slug}
                           onChange={(e) => setFormData({...formData, slug: e.target.value})}
-                          className="w-full bg-white border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-green-500/50"
+                          className="w-full bg-card border border-gray-300 rounded-xl h-12 px-4 outline-none focus:ring-2 focus:ring-gold/50"
                         >
                           <option value="general">General Experience</option>
                           {treks.map(t => <option key={t._id} value={t.slug}>{t.title}</option>)}
@@ -268,7 +255,7 @@ export default function ReviewsPage() {
                           value={formData.description}
                           onChange={(e) => setFormData({...formData, description: e.target.value})}
                           placeholder="Tell us about your journey..."
-                          className="rounded-xl min-h-[120px] focus:ring-green-500"
+                          className="rounded-xl min-h-[120px] focus:ring-gold"
                           minLength={20}
                           maxLength={4000}
                         />
@@ -277,7 +264,7 @@ export default function ReviewsPage() {
                       <Button 
                         type="submit" 
                         disabled={submitting}
-                        className="w-full h-12 bg-green-700 hover:bg-green-800 text-white rounded-xl font-bold"
+                        className="w-full h-12 bg-gold hover:bg-gold/90 text-white rounded-xl font-bold"
                       >
                         {submitting ? <Loader2 className="animate-spin" /> : <span className="flex items-center gap-2">Submit Review <Send size={18} /></span>}
                       </Button>
@@ -286,16 +273,15 @@ export default function ReviewsPage() {
                 </Card>
               )}
             </div>
-          )}
         </div>
       </section>
 
       {/* Reviews Grid */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {loading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="h-10 w-10 animate-spin text-green-700" />
+              <Loader2 className="h-10 w-10 animate-spin text-gold" />
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -312,8 +298,8 @@ export default function ReviewsPage() {
                           className="rounded-full object-cover"
                         />
                         <div>
-                          <h3 className="font-bold text-lg text-gray-900">{review.userName}</h3>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <h3 className="font-bold text-lg text-ivory">{review.userName}</h3>
+                          <div className="flex items-center gap-2 text-sm text-stone">
                             <Calendar className="h-4 w-4" />
                             <span>{new Date(review.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</span>
                           </div>
@@ -326,13 +312,13 @@ export default function ReviewsPage() {
                       </div>
                     </div>
 
-                    <Badge variant="outline" className="mb-4 bg-green-50 text-green-700 border-green-200">
+                    <Badge variant="outline" className="mb-4 bg-gold/5 text-gold border-gold/30">
                       {review.slug === "general" ? "General Experience" : review.slug.replace(/-/g, " ")}
                     </Badge>
 
                     <div className="relative mb-4">
-                      <Quote className="absolute -top-2 -left-2 h-8 w-8 text-green-100" />
-                      <p className="text-gray-700 leading-relaxed pl-6">{review.description}</p>
+                      <Quote className="absolute -top-2 -left-2 h-8 w-8 text-ivory" />
+                      <p className="text-ivory leading-relaxed pl-6">{review.description}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -343,51 +329,51 @@ export default function ReviewsPage() {
       </section>
 
       {/* Review Stats */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Review Statistics</h2>
-            <p className="text-xl text-gray-600">Breakdown of my client feedback across different aspects</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-ivory mb-4">Review Statistics</h2>
+            <p className="text-xl text-stone">Breakdown of my client feedback across different aspects</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="text-center p-6 bg-white border-none shadow-sm">
-              <div className="text-3xl font-bold text-green-700 mb-2">100%</div>
-              <div className="text-gray-600 mb-2">Safety Record</div>
-              <div className="text-sm text-gray-500">Zero accidents in 15+ years</div>
+            <Card className="text-center p-6 bg-card border-none shadow-sm">
+              <div className="text-3xl font-bold text-gold mb-2">100%</div>
+              <div className="text-stone mb-2">Safety Record</div>
+              <div className="text-sm text-stone">Zero accidents in 15+ years</div>
             </Card>
 
-            <Card className="text-center p-6 bg-white border-none shadow-sm">
-              <div className="text-3xl font-bold text-green-700 mb-2">4.9★</div>
-              <div className="text-gray-600 mb-2">Average Rating</div>
-              <div className="text-sm text-gray-500">Across all platforms</div>
+            <Card className="text-center p-6 bg-card border-none shadow-sm">
+              <div className="text-3xl font-bold text-gold mb-2">4.9★</div>
+              <div className="text-stone mb-2">Average Rating</div>
+              <div className="text-sm text-stone">Across all platforms</div>
             </Card>
 
-            <Card className="text-center p-6 bg-white border-none shadow-sm">
-              <div className="text-3xl font-bold text-green-700 mb-2">95%</div>
-              <div className="text-gray-600 mb-2">Repeat Clients</div>
-              <div className="text-sm text-gray-500">Book additional treks</div>
+            <Card className="text-center p-6 bg-card border-none shadow-sm">
+              <div className="text-3xl font-bold text-gold mb-2">95%</div>
+              <div className="text-stone mb-2">Repeat Clients</div>
+              <div className="text-sm text-stone">Book additional treks</div>
             </Card>
 
-            <Card className="text-center p-6 bg-white border-none shadow-sm">
-              <div className="text-3xl font-bold text-green-700 mb-2">30+</div>
-              <div className="text-gray-600 mb-2">Countries</div>
-              <div className="text-sm text-gray-500">Clients from worldwide</div>
+            <Card className="text-center p-6 bg-card border-none shadow-sm">
+              <div className="text-3xl font-bold text-gold mb-2">30+</div>
+              <div className="text-stone mb-2">Countries</div>
+              <div className="text-sm text-stone">Clients from worldwide</div>
             </Card>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-green-700 text-white">
+      <section className="py-20 bg-gold text-white">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Create Your Own Amazing Experience?</h2>
-          <p className="text-xl mb-8 text-green-100">
+          <p className="text-xl mb-8 text-ivory">
             Join hundreds of satisfied trekkers who've discovered the magic of Nepal with me as their guide.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/booking">
-              <Button size="lg" className="bg-white text-green-700 hover:bg-gray-100 h-14 px-8 rounded-xl">
+              <Button size="lg" className="bg-card text-gold hover:bg-secondary h-14 px-8 rounded-xl">
                 Book Your Trek
               </Button>
             </Link>
@@ -395,7 +381,7 @@ export default function ReviewsPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-green-700 bg-transparent h-14 px-8 rounded-xl"
+                className="border-white text-white hover:bg-card hover:text-gold bg-transparent h-14 px-8 rounded-xl"
               >
                 Ask Questions
               </Button>
@@ -403,6 +389,7 @@ export default function ReviewsPage() {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }

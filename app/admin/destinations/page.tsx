@@ -1,9 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Edit, Trash2, MapPin, Loader2, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
+import {
+  AdminFormShell,
+  AdminFormBody,
+  AdminFormSection,
+  AdminFormGrid,
+  AdminFormField,
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormActions,
+} from "@/components/admin/admin-form";
 
 interface Destination {
   _id: string;
@@ -86,123 +97,66 @@ export default function AdminDestinationsPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-950">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+        <Loader2 className="h-10 w-10 animate-spin text-gold" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 bg-gray-950 min-h-[calc(100vh-4rem)] p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-            Manage Destinations
-          </h1>
-          <p className="text-gray-400 mt-1">Add, update, or remove trekking regions</p>
-        </div>
-        {!isEditing && (
-          <Button
-            onClick={() => {
-              setCurrentDest({});
-              setIsEditing(true);
-            }}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 rounded-xl shadow-lg shadow-emerald-500/20"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Destination
-          </Button>
-        )}
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <AdminPageHeader
+        title="Manage destinations"
+        description="Add, update, or remove trekking regions."
+        action={
+          !isEditing ? (
+            <Button onClick={() => { setCurrentDest({}); setIsEditing(true); }} className="bg-gold hover:bg-gold/90">
+              <Plus className="mr-2 h-4 w-4" /> Add destination
+            </Button>
+          ) : undefined
+        }
+      />
 
       {isEditing ? (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-emerald-400" />
-              {currentDest._id ? "Edit Destination" : "New Destination"}
-            </h2>
-            <Button variant="ghost" onClick={() => setIsEditing(false)} className="text-gray-400 hover:text-white">
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        <AdminFormShell
+          mode={currentDest._id ? "edit" : "create"}
+          title={currentDest._id ? "Edit destination" : "New destination"}
+          description="Region details shown on the destinations page."
+          icon={MapPin}
+          onClose={() => setIsEditing(false)}
+        >
+          <form onSubmit={handleSave}>
+            <AdminFormBody>
+              <AdminFormSection title="Region details">
+                <AdminFormGrid>
+                  <AdminFormField label="Title" required>
+                    <AdminFormInput required value={currentDest.title || ""} onChange={(e) => setCurrentDest({ ...currentDest, title: e.target.value })} placeholder="Annapurna Region" />
+                  </AdminFormField>
+                  <AdminFormField label="Slug" hint="Auto-generated if left blank.">
+                    <AdminFormInput value={currentDest.slug || ""} onChange={(e) => setCurrentDest({ ...currentDest, slug: e.target.value })} placeholder="annapurna-region" />
+                  </AdminFormField>
+                  <AdminFormField label="Image URL" fullWidth>
+                    <AdminFormInput value={currentDest.image || ""} onChange={(e) => setCurrentDest({ ...currentDest, image: e.target.value })} placeholder="https://..." />
+                  </AdminFormField>
+                  <AdminFormField label="Available guides">
+                    <AdminFormInput type="number" min="0" value={currentDest.availableGuides || 0} onChange={(e) => setCurrentDest({ ...currentDest, availableGuides: parseInt(e.target.value) || 0 })} />
+                  </AdminFormField>
+                  <AdminFormField label="Price range per day" hint="e.g. $35–$50">
+                    <AdminFormInput value={currentDest.priceRange || ""} onChange={(e) => setCurrentDest({ ...currentDest, priceRange: e.target.value })} />
+                  </AdminFormField>
+                  <AdminFormField label="Description" required fullWidth>
+                    <AdminFormTextarea required rows={4} value={currentDest.description || ""} onChange={(e) => setCurrentDest({ ...currentDest, description: e.target.value })} placeholder="Engaging summary for this region..." />
+                  </AdminFormField>
+                </AdminFormGrid>
+              </AdminFormSection>
 
-          <form onSubmit={handleSave} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Title *</label>
-                <input
-                  required
-                  value={currentDest.title || ""}
-                  onChange={(e) => setCurrentDest({ ...currentDest, title: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none transition-all"
-                  placeholder="e.g., Annapurna Region"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Slug (Auto-generated if left blank)</label>
-                <input
-                  value={currentDest.slug || ""}
-                  onChange={(e) => setCurrentDest({ ...currentDest, slug: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-gray-400 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none transition-all"
-                  placeholder="e.g., annapurna-region"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Image URL</label>
-              <input
-                value={currentDest.image || ""}
-                onChange={(e) => setCurrentDest({ ...currentDest, image: e.target.value })}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none transition-all"
-                placeholder="https://example.com/image.jpg"
+              <AdminFormActions
+                onCancel={() => setIsEditing(false)}
+                submitLabel={currentDest._id ? "Update destination" : "Save destination"}
+                loading={submitting}
               />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Available Guides</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={currentDest.availableGuides || 0}
-                  onChange={(e) => setCurrentDest({ ...currentDest, availableGuides: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Price Range Per Day</label>
-                <input
-                  value={currentDest.priceRange || ""}
-                  onChange={(e) => setCurrentDest({ ...currentDest, priceRange: e.target.value })}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none transition-all"
-                  placeholder="e.g., $35-$50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">Description *</label>
-              <textarea
-                required
-                rows={4}
-                value={currentDest.description || ""}
-                onChange={(e) => setCurrentDest({ ...currentDest, description: e.target.value })}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none transition-all resize-none"
-                placeholder="Write a short, engaging description for this region..."
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
-              <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="bg-transparent border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                Save Destination
-              </Button>
-            </div>
+            </AdminFormBody>
           </form>
-        </div>
+        </AdminFormShell>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {destinations.map((dest) => (
@@ -216,7 +170,7 @@ export default function AdminDestinationsPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-transparent to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
                   <h3 className="text-lg font-bold text-white drop-shadow-md">{dest.title}</h3>
-                  <span className="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2 py-1 rounded border border-emerald-500/20 backdrop-blur-sm">
+                  <span className="bg-gold/20 text-gold text-xs font-bold px-2 py-1 border border-gold/20">
                     {dest.trekCount} Treks
                   </span>
                 </div>

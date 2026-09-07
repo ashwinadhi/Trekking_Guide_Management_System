@@ -27,58 +27,55 @@ export function CartSidebar() {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => dispatch({ type: "CLOSE_CART" })} />
+      <div className="fixed inset-0 z-40 bg-black/70" onClick={() => dispatch({ type: "CLOSE_CART" })} />
 
-      <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            Equipment Cart ({state.items.length})
-          </h2>
-          <Button variant="ghost" size="sm" onClick={() => dispatch({ type: "CLOSE_CART" })}>
+      <div className="fixed right-0 top-0 z-50 h-full w-96 border-l border-gold/20 bg-card">
+        <div className="flex items-center justify-between border-b border-gold/20 p-5">
+          <h2 className="font-display text-xl text-ivory">Equipment ({state.items.length})</h2>
+          <Button variant="ghost" size="sm" className="text-ivory" onClick={() => dispatch({ type: "CLOSE_CART" })}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-200px)]">
+        <div className="max-h-[calc(100vh-200px)] flex-1 overflow-y-auto p-4">
           {state.items.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="py-8 text-center text-stone">
+              <ShoppingCart className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>Your cart is empty</p>
             </div>
           ) : (
             <div className="space-y-4">
               {state.items.map((item) => (
-                <div key={item.id} className="border rounded-lg p-3">
+                <div key={item.id} className="border border-gold/15 p-3">
                   <div className="flex items-start gap-3">
                     <img
                       src={item.image || "/placeholder.svg"}
                       alt={item.name}
-                      className="w-16 h-16 object-cover rounded"
+                      className="h-16 w-16 object-cover"
                     />
                     <div className="flex-1">
-                      <h3 className="font-medium text-sm">{item.name}</h3>
-                      <Badge variant="secondary" className="text-xs mb-2">
+                      <h3 className="text-sm font-medium text-ivory">{item.name}</h3>
+                      <Badge variant="secondary" className="mb-2 text-xs">
                         {item.category}
                       </Badge>
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Quantity:</span>
+                          <span className="text-xs text-stone">Quantity:</span>
                           <div className="flex items-center gap-1">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0 bg-transparent"
+                              className="h-6 w-6 bg-transparent p-0"
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="text-sm w-8 text-center">{item.quantity}</span>
+                            <span className="w-8 text-center text-sm">{item.quantity}</span>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0 bg-transparent"
+                              className="h-6 w-6 bg-transparent p-0"
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             >
                               <Plus className="h-3 w-3" />
@@ -87,21 +84,21 @@ export function CartSidebar() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Rental Days:</span>
+                          <span className="text-xs text-stone">Rental Days:</span>
                           <div className="flex items-center gap-1">
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0 bg-transparent"
+                              className="h-6 w-6 bg-transparent p-0"
                               onClick={() => updateRentalDays(item.id, Math.max(1, item.rentalDays - 1))}
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="text-sm w-8 text-center">{item.rentalDays}</span>
+                            <span className="w-8 text-center text-sm">{item.rentalDays}</span>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-6 w-6 p-0 bg-transparent"
+                              className="h-6 w-6 bg-transparent p-0"
                               onClick={() => updateRentalDays(item.id, item.rentalDays + 1)}
                             >
                               <Plus className="h-3 w-3" />
@@ -110,14 +107,14 @@ export function CartSidebar() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="font-medium text-green-600">
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="font-display text-lg text-gold">
                           ${(item.price * item.quantity * item.rentalDays).toFixed(2)}
                         </span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-red-500 hover:text-red-700 h-6 px-2"
+                          className="h-6 px-2 text-destructive hover:text-destructive"
                           onClick={() => removeItem(item.id)}
                         >
                           Remove
@@ -132,12 +129,12 @@ export function CartSidebar() {
         </div>
 
         {state.items.length > 0 && (
-          <div className="border-t p-4 bg-gray-50">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-semibold">Total:</span>
-              <span className="font-bold text-lg text-green-600">${state.total.toFixed(2)}</span>
+          <div className="border-t border-gold/20 bg-secondary p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-ivory">Total</span>
+              <span className="font-display text-2xl text-gold">${state.total.toFixed(2)}</span>
             </div>
-            <Button className="w-full bg-green-700 hover:bg-green-800" onClick={() => setShowCheckout(true)}>
+            <Button className="w-full" onClick={() => setShowCheckout(true)}>
               Proceed to Checkout
             </Button>
           </div>

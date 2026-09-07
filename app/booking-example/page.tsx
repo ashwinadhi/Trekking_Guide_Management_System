@@ -93,7 +93,7 @@ export default function BookingExamplePage() {
               <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded capitalize">
                 {service.category}
               </span>
-              <span className="font-semibold text-green-700">
+              <span className="font-semibold text-gold">
                 {service.price ? `$${service.price}` : "Contact for price"}
               </span>
             </div>
@@ -181,7 +181,7 @@ export default function BookingExamplePage() {
               <button
                 type="submit"
                 disabled={formStatus.type === "info"}
-                className="w-full bg-green-600 text-white font-semibold py-2 rounded hover:bg-green-700 transition"
+                className="w-full bg-gold text-ink font-semibold py-2 hover:bg-gold/90 transition"
               >
                 Confirm Booking
               </button>

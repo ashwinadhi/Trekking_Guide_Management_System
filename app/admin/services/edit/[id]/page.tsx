@@ -2,6 +2,20 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2, Package } from "lucide-react";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
+import {
+  AdminFormShell,
+  AdminFormBody,
+  AdminFormSection,
+  AdminFormGrid,
+  AdminFormField,
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormSelect,
+  AdminFormActions,
+  AdminFormAlert,
+} from "@/components/admin/admin-form";
 
 export default function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -16,6 +30,7 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchService();
@@ -35,26 +50,29 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
           images: data.images ? data.images.join(", ") : "",
         });
       }
-    } catch (error) {
-      console.error(error);
+    } catch (fetchError) {
+      console.error(fetchError);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
 
     try {
       const payload = {
         ...formData,
         price: formData.price ? Number(formData.price) : undefined,
-        images: formData.images.split(",").map(img => img.trim()).filter(Boolean),
+        images: formData.images.split(",").map((img) => img.trim()).filter(Boolean),
       };
 
       const res = await fetch(`/api/services/${id}`, {
@@ -69,53 +87,76 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
         const data = await res.json();
         setError(data.error || "Failed to update service");
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gold" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Edit Service</h1>
-      {error && <div className="bg-red-100 text-red-600 p-3 mb-4 rounded">{error}</div>}
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input required name="title" value={formData.title} onChange={handleChange} className="w-full border rounded p-2 text-black" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Description</label>
-          <textarea required name="description" value={formData.description} onChange={handleChange} className="w-full border rounded p-2 text-black h-32" />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Category</label>
-            <select name="category" value={formData.category} onChange={handleChange} className="w-full border rounded p-2 text-black">
-              <option value="trek routes">Trek Routes</option>
-              <option value="hotels">Hotels</option>
-              <option value="equipment">Equipment</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Price (Optional)</label>
-            <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full border rounded p-2 text-black" />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Location</label>
-          <input required name="location" value={formData.location} onChange={handleChange} className="w-full border rounded p-2 text-black" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Images (Comma separated URLs)</label>
-          <input name="images" value={formData.images} onChange={handleChange} className="w-full border rounded p-2 text-black" />
-        </div>
-        <div className="flex justify-end space-x-3 pt-4">
-          <button type="button" onClick={() => router.back()} className="px-4 py-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
-          <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update Service</button>
-        </div>
-      </form>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <AdminPageHeader title="Edit service" description="Update this service listing." />
+      {error && <AdminFormAlert type="error" message={error} />}
+
+      <AdminFormShell
+        mode="edit"
+        title="Edit service"
+        icon={Package}
+        onClose={() => router.back()}
+      >
+        <form onSubmit={handleSubmit}>
+          <AdminFormBody>
+            <AdminFormSection title="Service details">
+              <AdminFormGrid cols={1}>
+                <AdminFormField label="Title" required fullWidth>
+                  <AdminFormInput required name="title" value={formData.title} onChange={handleChange} />
+                </AdminFormField>
+                <AdminFormField label="Description" required fullWidth>
+                  <AdminFormTextarea required name="description" rows={5} value={formData.description} onChange={handleChange} />
+                </AdminFormField>
+                <AdminFormGrid>
+                  <AdminFormField label="Category" required>
+                    <AdminFormSelect
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      options={[
+                        { value: "trek routes", label: "Trek routes" },
+                        { value: "hotels", label: "Hotels" },
+                        { value: "equipment", label: "Equipment" },
+                      ]}
+                    />
+                  </AdminFormField>
+                  <AdminFormField label="Price (optional)">
+                    <AdminFormInput type="number" name="price" value={formData.price} onChange={handleChange} />
+                  </AdminFormField>
+                </AdminFormGrid>
+                <AdminFormField label="Location" required fullWidth>
+                  <AdminFormInput required name="location" value={formData.location} onChange={handleChange} />
+                </AdminFormField>
+                <AdminFormField label="Image URLs" hint="Comma-separated links." fullWidth>
+                  <AdminFormInput name="images" value={formData.images} onChange={handleChange} />
+                </AdminFormField>
+              </AdminFormGrid>
+            </AdminFormSection>
+
+            <AdminFormActions
+              onCancel={() => router.back()}
+              submitLabel="Update service"
+              loading={submitting}
+            />
+          </AdminFormBody>
+        </form>
+      </AdminFormShell>
     </div>
   );
 }

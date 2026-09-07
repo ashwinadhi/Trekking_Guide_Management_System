@@ -2,10 +2,23 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Users, Plus, Pencil, Trash2, X, Save, Loader2, ImagePlus,
-  DollarSign, Clock, FileText, Globe, Briefcase, Camera,
-  CheckCircle, AlertCircle, Calendar,
+  Users, Plus, Pencil, Trash2, Loader2,
+  DollarSign, Clock, CheckCircle, AlertCircle, Calendar,
 } from "lucide-react";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
+import { Button } from "@/components/ui/button";
+import {
+  AdminFormShell,
+  AdminFormBody,
+  AdminFormSection,
+  AdminFormGrid,
+  AdminFormField,
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormSelect,
+  AdminFormActions,
+  AdminFormAlert,
+} from "@/components/admin/admin-form";
 
 interface Guide {
   _id: string;
@@ -144,145 +157,121 @@ export default function AdminGuidesPage() {
   };
 
   const statusColor = (s: string) =>
-    s === "available" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+    s === "available" ? "bg-gold/10 text-gold border-gold/20"
     : s === "on_trek" ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
     : "bg-red-500/10 text-red-400 border-red-500/20";
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+        <Loader2 className="h-10 w-10 animate-spin text-gold" />
         <p className="text-gray-400 text-lg font-medium">Loading guides...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">Manage Guides</h1>
-          <p className="text-gray-400 mt-1">Add, edit and manage trekking guide profiles</p>
-        </div>
-        <button onClick={() => { resetForm(); setShowForm(!showForm); }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40">
-          <Plus className="h-5 w-5" /> New Guide
-        </button>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <AdminPageHeader
+        title="Manage guides"
+        description="Add, edit, and manage trekking guide profiles."
+        action={
+          <Button onClick={() => { resetForm(); setShowForm(!showForm); }} className="bg-gold hover:bg-gold/90">
+            <Plus className="mr-2 h-4 w-4" /> New guide
+          </Button>
+        }
+      />
 
-      {/* Alerts */}
-      {success && <div className="flex items-center gap-3 px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl"><CheckCircle className="h-4 w-4" />{success}</div>}
-      {error && <div className="flex items-center gap-3 px-5 py-3.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl"><AlertCircle className="h-4 w-4" />{error}</div>}
+      {success && <AdminFormAlert type="success" message={success} />}
+      {error && <AdminFormAlert type="error" message={error} />}
 
-      {/* Form */}
       {showForm && (
-        <div className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              {editingId ? <Pencil className="h-5 w-5 text-amber-400" /> : <Plus className="h-5 w-5 text-emerald-400" />}
-              {editingId ? "Edit Guide" : "Add New Guide"}
-            </h2>
-            <button onClick={resetForm} className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg"><X className="h-5 w-5" /></button>
-          </div>
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Name */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><FileText className="h-4 w-4 text-gray-500" />Name</label>
-                <input required value={form.name} onChange={e => setForm({...form, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="e.g. Ashwin Shrestha" />
-              </div>
-              {/* Profile Image */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><ImagePlus className="h-4 w-4 text-gray-500" />Profile Image URL</label>
-                <input value={form.profileImage} onChange={e => setForm({...form, profileImage: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="https://..." />
-              </div>
-              {/* Price */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><DollarSign className="h-4 w-4 text-gray-500" />Price (USD/day)</label>
-                <input type="number" required min="0" value={form.price} onChange={e => setForm({...form, price: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="45" />
-              </div>
-              {/* Years Experience */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Clock className="h-4 w-4 text-gray-500" />Years of Experience</label>
-                <input type="number" required min="0" value={form.yearsExperience} onChange={e => setForm({...form, yearsExperience: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="15" />
-              </div>
-              {/* Availability Status */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><CheckCircle className="h-4 w-4 text-gray-500" />Availability Status</label>
-                <select value={form.availabilityStatus} onChange={e => setForm({...form, availabilityStatus: e.target.value as any})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all">
-                  <option value="available">Available</option>
-                  <option value="on_trek">On Trek</option>
-                  <option value="busy">Busy</option>
-                </select>
-              </div>
-              {/* Conditional Date Fields */}
+        <AdminFormShell
+          mode={editingId ? "edit" : "create"}
+          title={editingId ? "Edit guide" : "Add guide"}
+          description="Profile information shown on the guides page and booking flow."
+          icon={Users}
+          onClose={resetForm}
+        >
+          <form onSubmit={handleSubmit}>
+            <AdminFormBody>
+              <AdminFormSection title="Profile">
+                <AdminFormGrid>
+                  <AdminFormField label="Full name" required>
+                    <AdminFormInput required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ashwin Shrestha" />
+                  </AdminFormField>
+                  <AdminFormField label="Profile image URL">
+                    <AdminFormInput value={form.profileImage} onChange={(e) => setForm({ ...form, profileImage: e.target.value })} placeholder="https://..." />
+                  </AdminFormField>
+                  <AdminFormField label="Price (USD/day)" required>
+                    <AdminFormInput type="number" required min="0" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="45" />
+                  </AdminFormField>
+                  <AdminFormField label="Years of experience" required>
+                    <AdminFormInput type="number" required min="0" value={form.yearsExperience} onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })} placeholder="15" />
+                  </AdminFormField>
+                  <AdminFormField label="Availability" required>
+                    <AdminFormSelect
+                      value={form.availabilityStatus}
+                      onChange={(e) => setForm({ ...form, availabilityStatus: e.target.value as typeof form.availabilityStatus })}
+                      options={[
+                        { value: "available", label: "Available" },
+                        { value: "on_trek", label: "On trek" },
+                        { value: "busy", label: "Busy" },
+                      ]}
+                    />
+                  </AdminFormField>
+                </AdminFormGrid>
+              </AdminFormSection>
+
               {form.availabilityStatus !== "available" && (
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Calendar className="h-4 w-4 text-emerald-500" />Unavailable From</label>
-                    <input type="date" required value={form.unavailableFrom} onChange={e => setForm({...form, unavailableFrom: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Calendar className="h-4 w-4 text-emerald-500" />Unavailable To</label>
-                    <input type="date" required value={form.unavailableTo} onChange={e => setForm({...form, unavailableTo: e.target.value})}
-                      className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" />
-                  </div>
-                </div>
+                <AdminFormSection title="Unavailable period" description="When the guide cannot take new bookings.">
+                  <AdminFormGrid>
+                    <AdminFormField label="From" required>
+                      <AdminFormInput type="date" required value={form.unavailableFrom} onChange={(e) => setForm({ ...form, unavailableFrom: e.target.value })} />
+                    </AdminFormField>
+                    <AdminFormField label="To" required>
+                      <AdminFormInput type="date" required value={form.unavailableTo} onChange={(e) => setForm({ ...form, unavailableTo: e.target.value })} />
+                    </AdminFormField>
+                  </AdminFormGrid>
+                </AdminFormSection>
               )}
-              {/* Languages */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Globe className="h-4 w-4 text-gray-500" />Languages (comma-separated)</label>
-                <input value={form.languages} onChange={e => setForm({...form, languages: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="English, Nepali, Hindi" />
-              </div>
-              {/* Services */}
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Briefcase className="h-4 w-4 text-gray-500" />Services (comma-separated)</label>
-                <input value={form.services} onChange={e => setForm({...form, services: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="Trekking, Cultural Tours, Equipment Rental" />
-              </div>
-              {/* Gallery */}
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><Camera className="h-4 w-4 text-gray-500" />Gallery URLs (comma-separated)</label>
-                <input value={form.gallery} onChange={e => setForm({...form, gallery: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all" placeholder="https://img1.jpg, https://img2.jpg" />
-              </div>
-              {/* Description */}
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><FileText className="h-4 w-4 text-gray-500" />Short Description</label>
-                <textarea required rows={2} value={form.description} onChange={e => setForm({...form, description: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all resize-none" placeholder="Brief bio for card view..." />
-              </div>
-              {/* About */}
-              <div className="md:col-span-2">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2"><FileText className="h-4 w-4 text-gray-500" />Detailed About</label>
-                <textarea rows={5} value={form.about} onChange={e => setForm({...form, about: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-900/60 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all resize-none" placeholder="Full bio for profile page..." />
-              </div>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <button type="submit" disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/20">
-                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                {submitting ? "Saving..." : editingId ? "Update Guide" : "Create Guide"}
-              </button>
-              <button type="button" onClick={resetForm} className="px-6 py-2.5 text-gray-400 hover:text-white border border-gray-700/50 hover:border-gray-600 rounded-xl font-medium transition-all">Cancel</button>
-            </div>
+
+              <AdminFormSection title="Skills & media">
+                <AdminFormGrid cols={1}>
+                  <AdminFormGrid>
+                    <AdminFormField label="Languages" hint="Comma-separated.">
+                      <AdminFormInput value={form.languages} onChange={(e) => setForm({ ...form, languages: e.target.value })} placeholder="English, Nepali, Hindi" />
+                    </AdminFormField>
+                    <AdminFormField label="Services" hint="Comma-separated.">
+                      <AdminFormInput value={form.services} onChange={(e) => setForm({ ...form, services: e.target.value })} placeholder="Trekking, Cultural tours" />
+                    </AdminFormField>
+                  </AdminFormGrid>
+                  <AdminFormField label="Gallery URLs" hint="Comma-separated image links." fullWidth>
+                    <AdminFormInput value={form.gallery} onChange={(e) => setForm({ ...form, gallery: e.target.value })} placeholder="https://img1.jpg, https://img2.jpg" />
+                  </AdminFormField>
+                  <AdminFormField label="Short description" required fullWidth>
+                    <AdminFormTextarea required rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Brief bio for cards..." />
+                  </AdminFormField>
+                  <AdminFormField label="Detailed about" fullWidth>
+                    <AdminFormTextarea rows={5} value={form.about} onChange={(e) => setForm({ ...form, about: e.target.value })} placeholder="Full profile bio..." />
+                  </AdminFormField>
+                </AdminFormGrid>
+              </AdminFormSection>
+
+              <AdminFormActions
+                onCancel={resetForm}
+                submitLabel={editingId ? "Update guide" : "Create guide"}
+                loading={submitting}
+              />
+            </AdminFormBody>
           </form>
-        </div>
+        </AdminFormShell>
       )}
 
       {/* Guide List */}
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-5">
-          <Users className="h-5 w-5 text-emerald-400" /> All Guides
+          <Users className="h-5 w-5 text-gold" /> All Guides
           <span className="ml-2 text-sm font-normal text-gray-400">({guides.length})</span>
         </h2>
 
@@ -292,7 +281,7 @@ export default function AdminGuidesPage() {
             <h3 className="text-lg font-semibold text-gray-300 mb-2">No guides yet</h3>
             <p className="text-gray-500 mb-6">Add your first guide profile to get started.</p>
             <button onClick={() => { resetForm(); setShowForm(true); }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold">
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-gold to-teal-600 text-white rounded-xl font-semibold">
               <Plus className="h-5 w-5" /> Add First Guide
             </button>
           </div>
@@ -312,7 +301,7 @@ export default function AdminGuidesPage() {
                     <div>
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">{g.name}</h3>
+                          <h3 className="text-lg font-bold text-white group-hover:text-gold transition-colors">{g.name}</h3>
                           <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
                             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{g.yearsExperience} yrs exp</span>
                             <span className="text-gray-600">•</span>

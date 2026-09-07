@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import connectDB from "./db";
 import { User } from "../models/User";
 import bcrypt from "bcryptjs";
+import { serverEnv } from "./env";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -48,6 +49,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.email = user.email;
       }
       return token;
     },
@@ -56,6 +58,7 @@ export const authOptions: NextAuthOptions = {
         if (session.user) {
           (session.user as any).id = token.id;
           (session.user as any).role = token.role;
+          session.user.email = token.email as string;
         }
       }
       return session;
@@ -67,5 +70,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: serverEnv.nextAuthSecret,
 };

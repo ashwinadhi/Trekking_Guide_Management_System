@@ -55,9 +55,9 @@ export default function GuideProfilePage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen"><Header />
+    <div className="min-h-screen bg-background"><Header />
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4"><Loader2 className="h-10 w-10 animate-spin text-emerald-600" /><p className="text-gray-500 text-lg">Loading guide profile...</p></div>
+        <div className="flex flex-col items-center gap-4"><Loader2 className="h-10 w-10 animate-spin text-gold" /><p className="text-stone text-lg">Loading guide profile...</p></div>
       </div><Footer />
     </div>
   );
@@ -66,22 +66,22 @@ export default function GuideProfilePage() {
     <div className="min-h-screen"><Header />
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-700 mb-2">{error || "Guide not found"}</h2>
-          <Link href="/guides"><Button className="bg-emerald-700 hover:bg-emerald-800"><ArrowLeft className="mr-2 h-4 w-4" />Back to Guides</Button></Link>
+          <Users className="h-16 w-16 text-stone mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-ivory mb-2">{error || "Guide not found"}</h2>
+          <Link href="/guides"><Button className="bg-gold hover:bg-gold/90"><ArrowLeft className="mr-2 h-4 w-4" />Back to Guides</Button></Link>
         </div>
       </div><Footer />
     </div>
   );
 
-  const availColor = guide.availabilityStatus === "available" ? "bg-green-600" : guide.availabilityStatus === "on_trek" ? "bg-amber-600" : "bg-red-600";
+  const availColor = guide.availabilityStatus === "available" ? "bg-gold" : guide.availabilityStatus === "on_trek" ? "bg-amber-600" : "bg-red-600";
 
   return (
     <div className="min-h-screen">
       <Header />
 
       {/* Guide Header */}
-      <section className="py-12 bg-gradient-to-r from-green-50 to-blue-50">
+      <section className="py-12 bg-gradient-to-r from-card to-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
@@ -91,8 +91,8 @@ export default function GuideProfilePage() {
                     <img src={guide.profileImage} alt={guide.name} className="w-48 h-48 rounded-lg shadow-lg object-cover"
                       onError={e => { (e.target as HTMLImageElement).src = "/placeholder.svg"; }} />
                   ) : (
-                    <div className="w-48 h-48 rounded-lg shadow-lg bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                      <Users className="h-16 w-16 text-emerald-300" />
+                    <div className="w-48 h-48 rounded-lg shadow-lg bg-gradient-to-br from-secondary to-card flex items-center justify-center">
+                      <Users className="h-16 w-16 text-gold/50" />
                     </div>
                   )}
                   <div className="flex flex-col items-end absolute -top-2 -right-2">
@@ -100,7 +100,7 @@ export default function GuideProfilePage() {
                       {guide.availabilityStatus.replace("_", " ")}
                     </Badge>
                     {guide.availabilityStatus !== "available" && guide.unavailableFrom && (
-                      <span className="bg-white/90 backdrop-blur-sm text-[10px] font-bold px-2 py-0.5 rounded shadow-sm mt-1 border border-gray-100">
+                      <span className="bg-card/90 backdrop-blur-sm text-[10px] font-bold px-2 py-0.5 rounded shadow-sm mt-1 border border-gold/15">
                         {new Date(guide.unavailableFrom).toLocaleDateString()} - {new Date(guide.unavailableTo!).toLocaleDateString()}
                       </span>
                     )}
@@ -108,23 +108,23 @@ export default function GuideProfilePage() {
                 </div>
 
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{guide.name}</h1>
+                  <h1 className="text-3xl font-bold text-ivory mb-2">{guide.name}</h1>
 
                   <div className="flex items-center gap-4 mb-4">
                     {guide.reviews.length > 0 && (
                       <div className="flex items-center gap-1">
                         <Star className="h-5 w-5 text-yellow-400 fill-current" />
                         <span className="font-bold">{avgRating(guide.reviews)}</span>
-                        <span className="text-gray-600">({guide.reviews.length} reviews)</span>
+                        <span className="text-stone">({guide.reviews.length} reviews)</span>
                       </div>
                     )}
                     <div className="flex items-center gap-1">
-                      <Users className="h-5 w-5 text-gray-400" />
-                      <span className="text-gray-600">{guide.yearsExperience} years experience</span>
+                      <Users className="h-5 w-5 text-stone" />
+                      <span className="text-stone">{guide.yearsExperience} years experience</span>
                     </div>
                   </div>
 
-                  <p className="text-gray-700 leading-relaxed mb-4">{guide.description}</p>
+                  <p className="text-ivory leading-relaxed mb-4">{guide.description}</p>
 
                   <div className="flex flex-wrap gap-2 mb-4">
                     {guide.services.map((s, i) => (
@@ -133,7 +133,7 @@ export default function GuideProfilePage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Languages className="h-5 w-5 text-gray-400" />
+                    <Languages className="h-5 w-5 text-stone" />
                     <div className="flex flex-wrap gap-1.5">
                       {guide.languages.map((lang, i) => (
                         <span key={i} className="px-2.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200">{lang}</span>
@@ -148,17 +148,17 @@ export default function GuideProfilePage() {
               <Card className="sticky top-24">
                 <CardContent className="p-6">
                   <div className="text-center mb-4">
-                    <div className="text-3xl font-bold text-green-700 mb-1">${guide.price}</div>
-                    <div className="text-gray-600">per day</div>
+                    <div className="text-3xl font-bold text-gold mb-1">${guide.price}</div>
+                    <div className="text-stone">per day</div>
                   </div>
                   <div className="space-y-3 mb-6">
-                    <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-green-600" /><span className="text-sm">Verified & Licensed</span></div>
-                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-green-600" /><span className="text-sm">Flexible Scheduling</span></div>
-                    <div className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-green-600" /><span className="text-sm">Direct Communication</span></div>
+                    <div className="flex items-center gap-2"><Shield className="h-4 w-4 text-gold" /><span className="text-sm">Verified & Licensed</span></div>
+                    <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-gold" /><span className="text-sm">Flexible Scheduling</span></div>
+                    <div className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-gold" /><span className="text-sm">Direct Communication</span></div>
                   </div>
                   <div className="space-y-3">
                     <Link href={`/booking?guide=${guide._id}`}>
-                      <Button className="w-full bg-green-700 hover:bg-green-800">Book This Guide</Button>
+                      <Button className="w-full bg-gold hover:bg-gold/90">Book This Guide</Button>
                     </Link>
                     <Link href="/contact">
                       <Button variant="outline" className="w-full bg-transparent mt-2">
@@ -191,11 +191,11 @@ export default function GuideProfilePage() {
                   {guide.about ? (
                     <div className="space-y-4">
                       {guide.about.split(/\n\n|\n/).filter(p => p.trim()).map((p, i) => (
-                        <p key={i} className="text-gray-700 leading-relaxed">{p}</p>
+                        <p key={i} className="text-ivory leading-relaxed">{p}</p>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 italic">No detailed about section yet.</p>
+                    <p className="text-stone italic">No detailed about section yet.</p>
                   )}
                 </CardContent>
               </Card>
@@ -209,13 +209,13 @@ export default function GuideProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {guide.services.map((s, i) => (
                         <div key={i} className="flex items-center gap-3">
-                          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                          <CheckCircle className="h-5 w-5 text-gold flex-shrink-0" />
                           <span>{s}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 italic">No services listed yet.</p>
+                    <p className="text-stone italic">No services listed yet.</p>
                   )}
                 </CardContent>
               </Card>
@@ -228,19 +228,19 @@ export default function GuideProfilePage() {
                     <Card key={i}>
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">
-                          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-emerald-700 font-bold text-sm">{review.user.charAt(0).toUpperCase()}</span>
+                          <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-gold font-bold text-sm">{review.user.charAt(0).toUpperCase()}</span>
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-semibold">{review.user}</h4>
                               <div className="flex items-center gap-0.5">
                                 {[...Array(5)].map((_, j) => (
-                                  <Star key={j} className={`h-4 w-4 ${j < review.rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
+                                  <Star key={j} className={`h-4 w-4 ${j < review.rating ? "text-yellow-400 fill-current" : "text-stone"}`} />
                                 ))}
                               </div>
                             </div>
-                            <p className="text-gray-700">{review.comment}</p>
+                            <p className="text-ivory">{review.comment}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -248,7 +248,7 @@ export default function GuideProfilePage() {
                   ))}
                 </div>
               ) : (
-                <Card><CardContent className="p-6 text-center text-gray-500">No reviews yet.</CardContent></Card>
+                <Card><CardContent className="p-6 text-center text-stone">No reviews yet.</CardContent></Card>
               )}
             </TabsContent>
 
@@ -265,7 +265,7 @@ export default function GuideProfilePage() {
                   ))}
                 </div>
               ) : (
-                <Card><CardContent className="p-6 text-center text-gray-500">No gallery images yet.</CardContent></Card>
+                <Card><CardContent className="p-6 text-center text-stone">No gallery images yet.</CardContent></Card>
               )}
             </TabsContent>
           </Tabs>

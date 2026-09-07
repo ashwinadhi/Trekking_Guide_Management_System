@@ -1,18 +1,13 @@
-import { Resend } from "resend";
-
-function escapeHtml(text: string): string {
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import { sendSmtpEmail } from "./mail";
+import { BRAND_NAME } from "./brand";
+import { buildNotificationHtml } from "./email-html";
 
 export type BookingEmailModule =
   | "guide"
   | "equipment"
   | "hotel"
   | "vehicle"
+  | "helicopter"
   | "trek_package"
   | "other";
 
@@ -21,6 +16,7 @@ const MODULE_TITLE: Record<BookingEmailModule, string> = {
   equipment: "Equipment rental",
   hotel: "Hotel booking",
   vehicle: "Car / vehicle rental",
+  helicopter: "Helicopter charter",
   trek_package: "Trek & guide booking",
   other: "Booking request",
 };
@@ -31,40 +27,19 @@ function buildHtml(params: {
   intro: string;
   rows: { label: string; value: string }[];
 }): string {
-  const title = MODULE_TITLE[params.module];
-  const rowsHtml = params.rows
-    .map(
-      (r) =>
-        `<tr><td style="padding:8px 12px;border:1px solid #e5e7eb;font-weight:600;color:#374151;width:40%;">${escapeHtml(r.label)}</td><td style="padding:8px 12px;border:1px solid #e5e7eb;color:#111827;">${escapeHtml(r.value)}</td></tr>`
-    )
-    .join("");
-
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8" /></head>
-<body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#111827;background:#f9fafb;padding:24px;">
-  <table role="presentation" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-    <tr><td style="background:#047857;color:#fff;padding:20px 24px;">
-      <h1 style="margin:0;font-size:20px;">Booking received</h1>
-      <p style="margin:8px 0 0;font-size:14px;opacity:0.95;">${escapeHtml(title)}</p>
-    </td></tr>
-    <tr><td style="padding:24px;">
-      <p style="margin:0 0 16px;">Hi ${escapeHtml(params.customerName)},</p>
-      <p style="margin:0 0 20px;color:#4b5563;">${escapeHtml(params.intro)}</p>
-      <table role="presentation" style="width:100%;border-collapse:collapse;font-size:14px;">${rowsHtml}</table>
-      <p style="margin:24px 0 0;font-size:13px;color:#6b7280;">If you did not make this request, you can ignore this email or contact us.</p>
-      <p style="margin:12px 0 0;font-size:13px;color:#6b7280;">— Technie Trek</p>
-    </td></tr>
-  </table>
-</body>
-</html>`.trim();
+  return buildNotificationHtml({
+    heading: "Booking received",
+    subtitle: MODULE_TITLE[params.module],
+    greeting: `Hi ${params.customerName},`,
+    intro: params.intro,
+    rows: params.rows,
+    footer: `If you did not make this request, you can ignore this email or contact us. — ${BRAND_NAME}`,
+  });
 }
 
 /**
- * Sends a confirmation email to the address the user submitted on the booking form.
- * Requires RESEND_API_KEY. If missing, logs and returns (booking still succeeds).
- * Set RESEND_FROM_EMAIL to a verified sender, e.g. "Bookings <bookings@yourdomain.com>".
+ * Sends a confirmation email via SMTP (Gmail, Outlook, etc.).
+ * Requires SMTP_USER and SMTP_PASS in `.env.local`. Booking still succeeds if email is skipped.
  */
 export async function sendBookingConfirmationEmail(params: {
   to: string;
@@ -73,39 +48,13 @@ export async function sendBookingConfirmationEmail(params: {
   intro: string;
   rows: { label: string; value: string }[];
 }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[booking-email] RESEND_API_KEY is not set; skipping confirmation email to", params.to);
-    return { ok: false, skipped: true };
-  }
-
-  const from =
-    process.env.RESEND_FROM_EMAIL?.trim() ||
-    "Technie Trek <onboarding@resend.dev>";
-
   const subject = `${MODULE_TITLE[params.module]} — we received your request`;
 
-  try {
-    const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send({
-      from,
-      to: [params.to.trim().toLowerCase()],
-      subject,
-      html: buildHtml(params),
-    });
-    if (error) {
-      console.error("[booking-email] Resend error:", error);
-      return { ok: false, error: error.message };
-    }
-    if (!data?.id) {
-      console.warn("[booking-email] Resend returned no id", data);
-    }
-    return { ok: true };
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : String(e);
-    console.error("[booking-email] Failed to send:", message);
-    return { ok: false, error: message };
-  }
+  return sendSmtpEmail({
+    to: params.to,
+    subject,
+    html: buildHtml(params),
+  });
 }
 
 const defaultIntro =
@@ -143,6 +92,7 @@ export function queueUnifiedBookingConfirmation(
             { label: "Guide", value: String(bd.guideName || "—") },
             { label: "Trek package", value: trekName || "Not specified" },
             { label: "Start date", value: String(bd.startDate || "—") },
+            { label: "End date", value: String(bd.endDate || "—") },
             { label: "Group size", value: String(bd.groupSize || "—") },
             { label: "Country", value: String(bd.country || "—") },
             { label: "Estimated total", value: `$${total}` },
@@ -297,4 +247,33 @@ export function queueVehicleBookingConfirmation(params: {
       { label: "Status", value: "Pending" },
     ],
   }).catch((e) => console.error("[booking-email] queueVehicleBookingConfirmation:", e));
+}
+
+export function queueHelicopterBookingConfirmation(params: {
+  to: string;
+  customerName: string;
+  helicopterName: string;
+  departureHelipad: string;
+  landingHelipad: string;
+  startDate: string;
+  endDate: string;
+  passengers: number;
+  totalPrice: number;
+}): void {
+  void sendBookingConfirmationEmail({
+    to: params.to,
+    module: "helicopter",
+    customerName: params.customerName,
+    intro: defaultIntro,
+    rows: [
+      { label: "Aircraft", value: params.helicopterName },
+      { label: "Departure", value: params.departureHelipad },
+      { label: "Landing", value: params.landingHelipad },
+      { label: "Passengers", value: String(params.passengers) },
+      { label: "Start", value: params.startDate },
+      { label: "End", value: params.endDate },
+      { label: "Estimated total", value: `$${Number(params.totalPrice)}` },
+      { label: "Status", value: "Pending" },
+    ],
+  }).catch((e) => console.error("[booking-email] queueHelicopterBookingConfirmation:", e));
 }

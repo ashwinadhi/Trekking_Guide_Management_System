@@ -12,11 +12,11 @@ export function CartIcon() {
 
   return (
     <Button
-      className="fixed top-20 right-4 z-30 bg-green-700 hover:bg-green-800 rounded-full p-3 shadow-lg"
+      className="fixed right-4 top-24 z-30 rounded-none border border-gold bg-ink p-3 text-gold hover:bg-gold hover:text-ink"
       onClick={() => dispatch({ type: "TOGGLE_CART" })}
     >
       <ShoppingCart className="h-5 w-5" />
-      <Badge className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs">
+      <Badge className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center rounded-none bg-gold text-xs text-ink">
         {state.items.reduce((total, item) => total + item.quantity, 0)}
       </Badge>
     </Button>

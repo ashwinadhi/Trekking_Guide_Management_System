@@ -1,13 +1,22 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Car, Loader2, Pencil, Calendar, Save, X } from "lucide-react";
+import { Plus, Trash2, Car, Loader2, Pencil, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader } from "@/components/admin/admin-ui";
+import {
+  AdminFormShell,
+  AdminFormBody,
+  AdminFormSection,
+  AdminFormGrid,
+  AdminFormField,
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormSelect,
+  AdminFormActions,
+  AdminTagInput,
+} from "@/components/admin/admin-form";
 
 interface Vehicle {
   _id: string;
@@ -126,109 +135,116 @@ export default function AdminFleetPage() {
     } catch (err) { console.error(err); }
   };
 
-  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-emerald-500 h-10 w-10" /></div>;
+  if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-gold h-10 w-10" /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-            Manage Fleet
-          </h1>
-          <p className="text-gray-400 mt-1">Vehicle inventory and availability</p>
-        </div>
-        <Button onClick={() => { setShowForm(!showForm); setEditingId(null); }} className="bg-emerald-600 hover:bg-emerald-700">
-          {showForm ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
-          {showForm ? "Cancel" : "Add Vehicle"}
-        </Button>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <AdminPageHeader
+        title="Manage fleet"
+        description="Vehicle inventory, pricing, and availability."
+        action={
+          !showForm ? (
+            <Button onClick={() => { setShowForm(true); setEditingId(null); }} className="bg-gold hover:bg-gold/90">
+              <Plus className="mr-2 h-4 w-4" /> Add vehicle
+            </Button>
+          ) : undefined
+        }
+      />
 
       {showForm && (
-        <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl animate-in fade-in slide-in-from-top-4">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-white">Vehicle Name</Label>
-                <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="bg-gray-800 border-gray-700 text-white" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white">Vehicle Type</Label>
-                <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md p-2">
-                  <option value="Jeep">Jeep</option>
-                  <option value="Van">Van</option>
-                  <option value="Bus">Bus</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white">Driver Name</Label>
-                <Input value={form.driverName} onChange={e => setForm({...form, driverName: e.target.value})} className="bg-gray-800 border-gray-700 text-white" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white">Price Per Day ($)</Label>
-                <Input type="number" value={form.pricePerDay} onChange={e => setForm({...form, pricePerDay: e.target.value})} className="bg-gray-800 border-gray-700 text-white" required />
-              </div>
-              <div className="md:col-span-2 space-y-2">
-                <Label className="text-white">Image URL</Label>
-                <Input value={form.image} onChange={e => setForm({...form, image: e.target.value})} className="bg-gray-800 border-gray-700 text-white" required />
-              </div>
-              <div className="md:col-span-2 space-y-2">
-                <Label className="text-white">Description</Label>
-                <Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="bg-gray-800 border-gray-700 text-white" required />
-              </div>
+        <AdminFormShell
+          mode={editingId ? "edit" : "create"}
+          title={editingId ? "Edit vehicle" : "Add vehicle"}
+          description="Configure vehicle details, locations, features, and blocked dates."
+          icon={Car}
+          onClose={() => { setShowForm(false); setEditingId(null); }}
+        >
+          <form onSubmit={handleSubmit}>
+            <AdminFormBody>
+              <AdminFormSection title="Vehicle information">
+                <AdminFormGrid>
+                  <AdminFormField label="Vehicle name" required>
+                    <AdminFormInput value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                  </AdminFormField>
+                  <AdminFormField label="Vehicle type" required>
+                    <AdminFormSelect
+                      value={form.type}
+                      onChange={(e) => setForm({ ...form, type: e.target.value })}
+                      options={[
+                        { value: "Jeep", label: "Jeep" },
+                        { value: "Van", label: "Van" },
+                        { value: "Bus", label: "Bus" },
+                      ]}
+                    />
+                  </AdminFormField>
+                  <AdminFormField label="Driver name" required>
+                    <AdminFormInput value={form.driverName} onChange={(e) => setForm({ ...form, driverName: e.target.value })} required />
+                  </AdminFormField>
+                  <AdminFormField label="Price per day ($)" required>
+                    <AdminFormInput type="number" value={form.pricePerDay} onChange={(e) => setForm({ ...form, pricePerDay: e.target.value })} required />
+                  </AdminFormField>
+                  <AdminFormField label="Image URL" required fullWidth>
+                    <AdminFormInput value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} required />
+                  </AdminFormField>
+                  <AdminFormField label="Description" required fullWidth>
+                    <AdminFormTextarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required rows={4} />
+                  </AdminFormField>
+                </AdminFormGrid>
+              </AdminFormSection>
 
-              <div className="space-y-2">
-                <Label className="text-white">Available Pickup Locations (Comma separated)</Label>
-                <Input value={form.pickupLocation} onChange={e => setForm({...form, pickupLocation: e.target.value})} className="bg-gray-800 border-gray-700 text-white" placeholder="e.g. Kathmandu, Pokhara, Airport" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white">Available Drop-off Locations (Comma separated)</Label>
-                <Input value={form.dropOffLocation} onChange={e => setForm({...form, dropOffLocation: e.target.value})} className="bg-gray-800 border-gray-700 text-white" placeholder="e.g. Pokhara, Lakeside, Hotel" />
-              </div>
+              <AdminFormSection title="Locations" description="Comma-separated pickup and drop-off options.">
+                <AdminFormGrid>
+                  <AdminFormField label="Pickup locations" hint="e.g. Kathmandu, Pokhara, Airport">
+                    <AdminFormInput value={form.pickupLocation} onChange={(e) => setForm({ ...form, pickupLocation: e.target.value })} />
+                  </AdminFormField>
+                  <AdminFormField label="Drop-off locations" hint="e.g. Pokhara, Lakeside, Hotel">
+                    <AdminFormInput value={form.dropOffLocation} onChange={(e) => setForm({ ...form, dropOffLocation: e.target.value })} />
+                  </AdminFormField>
+                </AdminFormGrid>
+              </AdminFormSection>
 
-              <div className="space-y-4">
-                <Label className="text-white">Features</Label>
-                <div className="flex gap-2">
-                  <Input value={featureInput} onChange={e => setFeatureInput(e.target.value)} placeholder="AC, 4WD, etc." className="bg-gray-800 border-gray-700 text-white" />
-                  <Button type="button" onClick={addFeature} variant="secondary">Add</Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {form.features.map((f, i) => (
-                    <Badge key={i} variant="secondary" className="bg-gray-800 text-emerald-400 gap-1 pr-1">
-                      {f} <X size={12} className="cursor-pointer hover:text-red-400" onClick={() => removeFeature(i)} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+              <AdminFormSection title="Features & availability">
+                <AdminFormGrid cols={1}>
+                  <AdminTagInput
+                    label="Features"
+                    placeholder="AC, 4WD, WiFi..."
+                    tags={form.features}
+                    inputValue={featureInput}
+                    onInputChange={setFeatureInput}
+                    onAdd={addFeature}
+                    onRemove={removeFeature}
+                    addLabel="Add"
+                  />
+                  <AdminTagInput
+                    label="Sold-out dates"
+                    hint="Dates when this vehicle cannot be booked."
+                    tags={form.soldOutDates}
+                    inputValue={dateInput}
+                    onInputChange={setDateInput}
+                    onAdd={addDate}
+                    onRemove={removeDate}
+                    addLabel="Block"
+                    variant="danger"
+                    inputType="date"
+                  />
+                </AdminFormGrid>
+              </AdminFormSection>
 
-              <div className="space-y-4">
-                <Label className="text-white">Sold Out Dates (Blocked)</Label>
-                <div className="flex gap-2">
-                  <Input type="date" value={dateInput} onChange={e => setDateInput(e.target.value)} className="bg-gray-800 border-gray-700 text-white" />
-                  <Button type="button" onClick={addDate} variant="secondary">Block</Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {form.soldOutDates.map((d, i) => (
-                    <Badge key={i} variant="outline" className="text-red-400 border-red-500/30 gap-1 pr-1">
-                      {d} <X size={12} className="cursor-pointer hover:text-red-600" onClick={() => removeDate(i)} />
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg font-bold">
-              <Save className="mr-2 h-5 w-5" /> {editingId ? "Update Vehicle" : "Save Vehicle"}
-            </Button>
+              <AdminFormActions
+                onCancel={() => { setShowForm(false); setEditingId(null); }}
+                submitLabel={editingId ? "Update vehicle" : "Save vehicle"}
+              />
+            </AdminFormBody>
           </form>
-        </div>
+        </AdminFormShell>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {vehicles.map((v) => (
-          <div key={v._id} className="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-emerald-500/40 transition-all">
+          <div key={v._id} className="group bg-card border border-gold/20 overflow-hidden hover:border-gold/50 transition-all">
             <div className="aspect-video relative overflow-hidden">
               <img src={v.image} alt={v.name} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute top-2 right-2 bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
+              <div className="absolute top-2 right-2 bg-gold text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
                 ${v.pricePerDay}/day
               </div>
             </div>
@@ -247,7 +263,7 @@ export default function AdminFleetPage() {
               
               <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500 bg-gray-800/50 p-2 rounded-lg border border-gray-700">
                 <div>
-                  <p className="font-bold uppercase text-emerald-500">Pickup</p>
+                  <p className="font-bold uppercase text-gold">Pickup</p>
                   <p className="truncate">{v.pickupLocation || "Not set"}</p>
                 </div>
                 <div>
